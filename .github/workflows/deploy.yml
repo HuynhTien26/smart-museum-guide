@@ -1,0 +1,123 @@
+name: Museum CI/CD Pipeline
+
+# 1. KÍCH HOẠT QUY TRÌNH
+# Tự động chạy khi có code mới đẩy (push) lên nhánh 'main'
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  # ==========================================
+  # JOB 1: XỬ LÝ API BACKEND
+  # ==========================================
+  build-and-deploy-backend:
+    runs-on: ubuntu-latest
+    # Chỉ chạy job này nếu có file thay đổi trong thư mục api-backend
+    # Hoặc có thể bỏ 'paths' để nó luôn chạy
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Install Backend Dependencies
+        working-directory: ./apps/api-backend
+        run: npm install
+
+      # (Tùy chọn) Chạy Unit Test cho Backend nếu có
+      # - name: Run Tests
+      #   working-directory: ./apps/api-backend
+      #   run: npm run test
+
+      - name: Deploy Backend to Server (Ví dụ qua SSH/VPS)
+        # Đây là bước đẩy code lên Server thật. (Cần cấu hình biến bảo mật trong GitHub Secrets)
+        # Sử dụng appleboy/ssh-action để login vào VPS và cập nhật code, restart PM2 / Docker
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USERNAME }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            cd /var/www/museum-api-backend
+            git pull origin main
+            npm install
+            pm2 restart museum-backend
+
+  # ==========================================
+  # JOB 2: XỬ LÝ MOBILE APP (REACT/VITE)
+  # ==========================================
+  build-mobile-app:
+    runs-on: ubuntu-latest
+    # Chỉ chạy job này nếu thư mục mobile-app hoặc packages/shared có thay đổi
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Install Dependencies
+        working-directory: ./apps/mobile-app
+        run: npm install
+
+      - name: Build Mobile App
+        working-directory: ./apps/mobile-app
+        # Tiêm tên miền API thật vào để thay thế cho localhost lúc build
+        env:
+          VITE_API_URL: ${{ secrets.PRODUCTION_API_URL }} 
+        run: npm run build
+
+      - name: Deploy Mobile App to Vercel/Netlify/S3
+        # Chỗ này thường dùng CLI của Vercel, Netlify hoặc copy thư mục 'dist' lên AWS S3
+        # Ví dụ deploy lên Netlify:
+        uses: nwtgck/actions-netlify@v2.0
+        with:
+          publish-dir: './apps/mobile-app/dist'
+          production-branch: main
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          deploy-message: "Deploy Mobile App"
+          enable-commit-comment: false
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_MOBILE_SITE_ID }}
+
+  # ==========================================
+  # JOB 3: XỬ LÝ WEB DASHBOARD (REACT/VITE)
+  # ==========================================
+  build-web-dashboard:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Install Dependencies
+        working-directory: ./apps/web-dashboard
+        run: npm install
+
+      - name: Build Dashboard
+        working-directory: ./apps/web-dashboard
+        env:
+          VITE_API_URL: ${{ secrets.PRODUCTION_API_URL }}
+        run: npm run build
+
+      - name: Deploy Dashboard to Vercel/Netlify/S3
+        uses: nwtgck/actions-netlify@v2.0
+        with:
+          publish-dir: './apps/web-dashboard/dist'
+          production-branch: main
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          deploy-message: "Deploy Dashboard"
+          enable-commit-comment: false
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_DASHBOARD_SITE_ID }}
