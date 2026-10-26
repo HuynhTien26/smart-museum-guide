@@ -20,10 +20,12 @@ export const PassManagementView: React.FC<Props> = ({
   onVerifiedSuccess,
   onCancel,
 }) => {
+  // [UC-15] Khai báo các state quản lý giao diện form kích hoạt mã PIN
   const [pinInput, setPinInput] = useState<string>(initialPin);
   const [errorMsg, setErrorMsg] = useState<string>('');
   const [isChecking, setIsChecking] = useState<boolean>(false);
 
+  // [UC-15] Hàm gửi Request xác minh mã PIN về máy chủ Node.js (cổng 3000)
   const handleVerifySubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const cleanPin = pinInput.trim().toUpperCase();
@@ -44,8 +46,10 @@ export const PassManagementView: React.FC<Props> = ({
       const result = await response.json();
 
       if (result.success) {
+        // Kích hoạt thành công, mở luồng âm thanh
         onVerifiedSuccess(cleanPin);
       } else {
+        // [UC-15] Cảnh báo cho khách khi mã PIN sai hoặc hết hạn
         setErrorMsg(result.message || 'Mã PIN không tồn tại hoặc đã hết hạn.');
       }
     } catch {
@@ -56,6 +60,7 @@ export const PassManagementView: React.FC<Props> = ({
   };
 
   return (
+    // [UC-15] UI Giao diện Form Kích hoạt Mã PIN (Độc lập / Thay thế)
     <div className="mw-shell">
       <header className="mw-header">
         <div>
