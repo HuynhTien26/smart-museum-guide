@@ -34,7 +34,7 @@ Hệ thống thuyết minh bảo tàng thông minh đa nền tảng, tích hợp
 
 * [Sơ đồ ca sử dụng (Use Case Diagram)] — *Mô tả các tác nhân (Khách tham quan, Ban quản trị) và chức năng hệ thống.*
 
-<details>
+<details open>
 <summary><a id="nhan-de-xem-chi-tiet-danh-sach-so-do-use-case-15-uc"></a><b>Nhấn để xem chi tiết danh sách sơ đồ Use Case (15 UC)</b></summary>
 
 <br/>
