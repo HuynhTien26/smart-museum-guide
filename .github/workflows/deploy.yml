@@ -49,66 +49,66 @@ jobs:
   # ==========================================
   # JOB 2: XỬ LÝ MOBILE APP (REACT/VITE)
   # ==========================================
-  build-mobile-app:
-    runs-on: ubuntu-latest
-    # Chỉ chạy job này nếu thư mục mobile-app hoặc packages/shared có thay đổi
-    steps:
-      - name: Checkout Source Code
-        uses: actions/checkout@v3
+  # build-mobile-app:
+  #   runs-on: ubuntu-latest
+  #   # Chỉ chạy job này nếu thư mục mobile-app hoặc packages/shared có thay đổi
+  #   steps:
+  #     - name: Checkout Source Code
+  #       uses: actions/checkout@v3
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: '18'
+  #     - name: Setup Node.js
+  #       uses: actions/setup-node@v3
+  #       with:
+  #         node-version: '18'
 
-      - name: Install Dependencies
-        working-directory: ./apps/mobile-app
-        run: npm install
+  #     - name: Install Dependencies
+  #       working-directory: ./apps/mobile-app
+  #       run: npm install
 
-      - name: Build Mobile App
-        working-directory: ./apps/mobile-app
-        # Tiêm tên miền API thật vào để thay thế cho localhost lúc build
-        env:
-          VITE_API_URL: ${{ secrets.PRODUCTION_API_URL }} 
-        run: npm run build
+  #     - name: Build Mobile App
+  #       working-directory: ./apps/mobile-app
+  #       # Tiêm tên miền API thật vào để thay thế cho localhost lúc build
+  #       env:
+  #         VITE_API_URL: ${{ secrets.PRODUCTION_API_URL }} 
+  #       run: npm run build
 
-      # - name: Deploy Mobile App to Vercel/Netlify/S3
-      #   # Chỗ này thường dùng CLI của Vercel, Netlify hoặc copy thư mục 'dist' lên AWS S3
-      #   # Ví dụ deploy lên Netlify:
-      #   uses: nwtgck/actions-netlify@v2.0
-      #   with:
-      #     publish-dir: './apps/mobile-app/dist'
-      #     production-branch: main
-      #     github-token: ${{ secrets.GITHUB_TOKEN }}
-      #     deploy-message: "Deploy Mobile App"
-      #     enable-commit-comment: false
-      #   env:
-      #     NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
-      #     NETLIFY_SITE_ID: ${{ secrets.NETLIFY_MOBILE_SITE_ID }}
+  #     # - name: Deploy Mobile App to Vercel/Netlify/S3
+  #     #   # Chỗ này thường dùng CLI của Vercel, Netlify hoặc copy thư mục 'dist' lên AWS S3
+  #     #   # Ví dụ deploy lên Netlify:
+  #     #   uses: nwtgck/actions-netlify@v2.0
+  #     #   with:
+  #     #     publish-dir: './apps/mobile-app/dist'
+  #     #     production-branch: main
+  #     #     github-token: ${{ secrets.GITHUB_TOKEN }}
+  #     #     deploy-message: "Deploy Mobile App"
+  #     #     enable-commit-comment: false
+  #     #   env:
+  #     #     NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+  #     #     NETLIFY_SITE_ID: ${{ secrets.NETLIFY_MOBILE_SITE_ID }}
 
-  # ==========================================
-  # JOB 3: XỬ LÝ WEB DASHBOARD (REACT/VITE)
-  # ==========================================
-  build-web-dashboard:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout Source Code
-        uses: actions/checkout@v3
+  # # ==========================================
+  # # JOB 3: XỬ LÝ WEB DASHBOARD (REACT/VITE)
+  # # ==========================================
+  # build-web-dashboard:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Checkout Source Code
+  #       uses: actions/checkout@v3
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: '18'
+  #     - name: Setup Node.js
+  #       uses: actions/setup-node@v3
+  #       with:
+  #         node-version: '18'
 
-      - name: Install Dependencies
-        working-directory: ./apps/web-dashboard
-        run: npm install
+  #     - name: Install Dependencies
+  #       working-directory: ./apps/web-dashboard
+  #       run: npm install
 
-      - name: Build Dashboard
-        working-directory: ./apps/web-dashboard
-        env:
-          VITE_API_URL: ${{ secrets.PRODUCTION_API_URL }}
-        run: npm run build
+  #     - name: Build Dashboard
+  #       working-directory: ./apps/web-dashboard
+  #       env:
+  #         VITE_API_URL: ${{ secrets.PRODUCTION_API_URL }}
+  #       run: npm run build
 
       # - name: Deploy Dashboard to Vercel/Netlify/S3
       #   uses: nwtgck/actions-netlify@v2.0
