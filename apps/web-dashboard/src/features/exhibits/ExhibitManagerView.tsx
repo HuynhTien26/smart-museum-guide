@@ -6,6 +6,7 @@ import '../../../../../packages/shared/styles/commonStyles.css';
 import { MUSEUM_ZONES_DATA } from '../../../../../packages/shared/data/zonesData';
 import { Exhibit } from '../../../../../packages/shared/models/exhibitModel';
 
+// [UC-12] Khai báo danh sách các ngôn ngữ hỗ trợ cho mục Thuyết minh
 const AVAILABLE_LANGUAGES = [
   { code: 'en', name: 'Tiếng Anh' },
   { code: 'fr', name: 'Tiếng Pháp' },
@@ -18,21 +19,23 @@ export const ExhibitManagerView: React.FC = () => {
   const [exhibits, setExhibits] = useState<Exhibit[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  // States Form
+  // States Form [UC-12]
   const [isEditing, setIsEditing] = useState(false);
   const [isZoneAudio, setIsZoneAudio] = useState(false);
   const [code, setCode] = useState('');
   const [zoneCode, setZoneCode] = useState(1);
   const [imageBase64, setImageBase64] = useState('');
+  // [UC-13] State lưu chuỗi URL để khởi tạo mã QR
   const [savedQR, setSavedQR] = useState<string | null>(null);
 
-  // State Đa ngôn ngữ (Mặc định có Tiếng Việt)
+  // State Đa ngôn ngữ (Mặc định có Tiếng Việt) [UC-12]
   const [translations, setTranslations] = useState([
     { langCode: 'vi', langName: 'Tiếng Việt', content: '', audioBase64: '' }
   ]);
 
   const imageInputRef = useRef<HTMLInputElement>(null);
 
+  // [UC-12] Load danh sách hiện vật từ SQL Server
   const fetchExhibits = async () => {
     setIsLoading(true);
     try {
@@ -64,6 +67,7 @@ export const ExhibitManagerView: React.FC = () => {
     }
   };
 
+  // [UC-12] Xử lý Upload Hình Ảnh (Giới hạn Max 5MB)
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -82,6 +86,7 @@ export const ExhibitManagerView: React.FC = () => {
     if (imageInputRef.current) imageInputRef.current.value = '';
   };
 
+  // [UC-12] Quản lý form Đa ngôn ngữ (Thêm/Xóa/Sửa content)
   const handleAddLanguage = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const selectedCode = e.target.value;
     if (!selectedCode) return;
@@ -122,6 +127,7 @@ export const ExhibitManagerView: React.FC = () => {
     if (audioInput) audioInput.value = '';
   };
 
+  // [UC-12] Lưu, cập nhật hoặc Thêm mới Hiện vật vào CSDL
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!code) return alert('Vui lòng nhập Mã (ID) hiện vật!');
@@ -151,6 +157,7 @@ export const ExhibitManagerView: React.FC = () => {
 
       if (response.ok) {
         alert(isEditing ? 'Cập nhật thành công!' : 'Thêm dữ liệu thành công!');
+        // [UC-13] Khởi tạo mã QR Code ứng với đường link của ID vừa tạo
         setSavedQR(`${window.location.origin}/?exhibit=${code}`);
         fetchExhibits();
         
@@ -165,6 +172,7 @@ export const ExhibitManagerView: React.FC = () => {
     }
   };
 
+  // [UC-13] Tải ảnh mã QR Code về máy để mang đi in ấn
   const handleDownloadQR = async () => {
     if (!savedQR) return;
     try {
@@ -198,6 +206,7 @@ export const ExhibitManagerView: React.FC = () => {
     });
   };
 
+  // [UC-12] Luồng A1: Kéo dữ liệu của hiện vật lên Form để Chỉnh Sửa
   const handleEditClick = (ex: Exhibit) => {
     setIsEditing(true); 
     setCode(ex.ExhibitID); 
@@ -229,12 +238,14 @@ export const ExhibitManagerView: React.FC = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  // [UC-12] Luồng A2: Xóa hồ sơ hiện vật
   const handleDelete = async (id: string) => {
     if (!window.confirm(`Xóa dữ liệu mã ${id}?`)) return;
     const response = await fetch(`http://localhost:3000/api/exhibits/${id}`, { method: 'DELETE' });
     if (response.ok) fetchExhibits();
   };
 
+  // Lọc hiển thị danh sách theo Tab
   const filteredList = exhibits.filter(ex => {
     const isZone = ex.ExhibitID.toUpperCase().startsWith('KHU-') || ex.ExhibitID.toUpperCase().startsWith('ZONE-');
     return isZoneAudio ? isZone : !isZone;
@@ -317,6 +328,7 @@ export const ExhibitManagerView: React.FC = () => {
           <hr style={{ borderColor: '#33332F', margin: '24px 0' }} />
           <h3 style={{ color: '#D49B4B', marginTop: 0, marginBottom: '16px' }}>Nội Dung & Audio Đa Ngôn Ngữ</h3>
 
+          {/* [UC-12] Giao diện điền nội dung Thuyết minh đa ngôn ngữ (Text & Audio) */}
           {translations.map((trans, index) => (
             <div key={trans.langCode} style={{ padding: '16px', backgroundColor: '#141413', borderRadius: '8px', marginBottom: '16px', borderLeft: `4px solid ${index === 0 ? '#2EBD85' : '#3B82F6'}`, position: 'relative' }}>
               <h4 style={{ margin: '0 0 12px 0', color: index === 0 ? '#2EBD85' : '#3B82F6' }}>Ngôn ngữ: {trans.langName} {index === 0 && '(Bắt buộc)'}</h4>
@@ -365,6 +377,7 @@ export const ExhibitManagerView: React.FC = () => {
           </div>
         </form>
 
+        {/* [UC-13] UI Hiển thị và tải mã QR sau khi Lưu thành công */}
         {savedQR && !isZoneAudio && (
           <div style={{ textAlign: 'center', marginTop: '24px', padding: '16px', border: '2px dashed #2EBD85', borderRadius: '8px' }}>
             <h3 style={{ color: '#2EBD85', marginTop: 0 }}>🎉 Lưu Thành Công! Mã QR đã sẵn sàng</h3>
@@ -405,6 +418,7 @@ export const ExhibitManagerView: React.FC = () => {
                       {ex.AudioBase64_VI ? '🎵 Có Audio VN' : '🚫 Không Audio VN'}
                     </td>
                     <td style={{ padding: '12px' }}>
+                      {/* [UC-12] Nút bấm Kích hoạt Chỉnh sửa & Xóa */}
                       <button onClick={() => handleEditClick(ex)} style={{ marginRight: '8px', padding: '6px 12px', backgroundColor: '#F59E0B', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>Sửa</button>
                       <button onClick={() => handleDelete(ex.ExhibitID)} style={{ padding: '6px 12px', backgroundColor: '#EF4444', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>Xóa</button>
                     </td>
