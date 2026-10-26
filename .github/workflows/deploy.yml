@@ -70,7 +70,7 @@ jobs:
         # Tiêm tên miền API thật vào để thay thế cho localhost lúc build
         env:
           VITE_API_URL: ${{ secrets.PRODUCTION_API_URL }} 
-        run: npm run build
+        run: npm run build --if-present
 
       # - name: Deploy Mobile App to Vercel/Netlify/S3
       #   # Chỗ này thường dùng CLI của Vercel, Netlify hoặc copy thư mục 'dist' lên AWS S3
