@@ -1,0 +1,138 @@
+/* ============================================================================
+ * TỆP: packages/shared/styles/commonStyles.css
+ * MỤC ĐÍCH: Định nghĩa CSS dùng chung cho cả Web Dashboard và Web Khách tham quan.
+ * NGUYÊN TẮC: Tách biệt hoàn toàn phần nhìn (Presentation) khỏi phần xử lý (Logic).
+ * ============================================================================ */
+
+/* --- PHÂN VÙNG 1: BIẾN MÀU SẮC & THÔNG SỐ CHUẨN BẢO TÀNG (DESIGN TOKENS) --- */
+:root {
+  --bg-primary: #141413;          /* Nền tối chủ đạo của bảo tàng */
+  --bg-card: #1E1E1C;             /* Nền của các khung thẻ chức năng */
+  --bg-input: #282825;            /* Nền của ô nhập liệu và hộp chọn <select> */
+  --border-subtle: #33332F;       /* Đường viền phân cách mảnh */
+  --accent-amber: #D49B4B;        /* Màu vàng đồng điểm nhấn chính */
+  --text-main: #F4F3EF;           /* Màu chữ chính độ tương phản cao */
+  --text-muted: #9E9D96;          /* Màu chữ phụ / ghi chú */
+  --status-active: #2EBD85;       /* Màu xanh lá: Đang hoạt động / Hợp lệ */
+  --status-unused: #3B82F6;       /* Màu xanh dương: Mã mới cấp chưa quét */
+  --status-expired: #E05252;      /* Màu đỏ: Đã hết hạn / Đã khóa */
+  --status-admin: #A855F7;        /* Màu tím: Mã nội bộ Admin miễn phí */
+  --radius-md: 10px;
+  --spacing-md: 16px;
+}
+
+/* --- PHÂN VÙNG 2: KHUNG BỐ CỤC & THẺ DÙNG CHUNG (LAYOUT & CARDS) --- */
+.museum-container {
+  background-color: var(--bg-primary);
+  color: var(--text-main);
+  font-family: system-ui, -apple-system, sans-serif;
+  padding: 24px;
+  min-height: 100vh;
+}
+
+.museum-card {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 20px;
+  margin-bottom: 20px;
+}
+
+.museum-section-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--accent-amber);
+  margin-top: 0;
+  margin-bottom: 16px;
+  border-bottom: 1px solid var(--border-subtle);
+  padding-bottom: 10px;
+}
+
+/* --- PHÂN VÙNG 3: BIỂU MẪU NHẬP LIỆU DÙNG CHUNG (FORM CONTROLS) --- */
+.museum-form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-md);
+}
+
+.museum-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.museum-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.museum-input,
+.museum-select {
+  background-color: var(--bg-input);
+  color: var(--text-main);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 14px;
+  outline: none;
+}
+
+.museum-input:focus,
+.museum-select:focus {
+  border-color: var(--accent-amber);
+}
+
+/* --- PHÂN VÙNG 4: NÚT BẤM CHUẨN (BUTTONS) --- */
+.museum-btn-primary {
+  background-color: var(--accent-amber);
+  color: #141413;
+  font-weight: 700;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 18px;
+  cursor: pointer;
+}
+
+.museum-btn-danger {
+  background-color: transparent;
+  color: var(--status-expired);
+  border: 1px solid var(--status-expired);
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+/* --- PHÂN VÙNG 5: BẢNG DỮ LIỆU & NHÃN TRẠNG THÁI (TABLES & BADGES) --- */
+.museum-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.museum-table th,
+.museum-table td {
+  padding: 12px;
+  text-align: left;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.museum-table th {
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.museum-badge {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.badge-active { background: rgba(46, 189, 133, 0.15); color: var(--status-active); }
+.badge-unused { background: rgba(59, 130, 246, 0.15); color: var(--status-unused); }
+.badge-expired { background: rgba(224, 82, 82, 0.15); color: var(--status-expired); }
+.badge-admin { background: rgba(168, 85, 247, 0.15); color: var(--status-admin); }
