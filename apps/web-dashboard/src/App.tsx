@@ -5,11 +5,18 @@
  * ============================================================================
  */
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { DashboardContainer } from './DashboardContainer';
 import { realtimeBus } from '../../../packages/shared/services/realtimeEventBus';
+import { realtimeSyncService } from '../../../packages/shared/services/realtimeSyncService';
 
 export default function App() {
+  
+
+  // Thêm khối này vào trong function App()
+  useEffect(() => {
+    realtimeSyncService.connect('ADMIN');
+  }, []);
   // Trạng thái cho khung giả lập Mobile
   const [pinCode, setPinCode] = useState('');
 
