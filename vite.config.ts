@@ -8,7 +8,7 @@ export default defineConfig({
     allowedHosts: true,
     proxy: {
       '/api': {
-        target: 'http://localhost:3000', // Trỏ tới backend SQL của bạn
+        target: 'http://localhost:3000', // Trỏ tới backend SQL
         changeOrigin: true,
       }
     }
