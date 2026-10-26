@@ -45,20 +45,19 @@ Hệ thống thuyết minh bảo tàng thông minh đa nền tảng, tích hợp
 <img width="2550" height="3300" alt="Image" src="https://github.com/user-attachments/assets/3583c639-01ed-4f47-9e68-593ce2409f21" />
 
 # UC12: Quản lý hiện vật
-<img width="2550" height="3300" alt="Image" src="https://github.com/user-attachments/assets/c6caecf1-8863-419e-b20d-bef310e406c1" />
-<img width="2550" height="3300" alt="Image" src="https://github.com/user-attachments/assets/16afd30a-a787-4343-bd54-589eac7c739e" />
-<img width="2550" height="3300" alt="Image" src="https://github.com/user-attachments/assets/136e5724-af4a-434f-a745-7785286df5ae" />
-<img width="2550" height="3300" alt="Image" src="https://github.com/user-attachments/assets/99103f4f-f453-46d9-9362-46d7946a895a" />
+<img width="2550" height="3300" alt="Image" src="https://github.com/user-attachments/assets/e6ff7552-a748-4657-8d83-0bf5c6cd0f3f" />
+<img width="2550" height="3300" alt="Image" src="https://github.com/user-attachments/assets/ca9ca093-b779-4272-bb75-5589e8e71da6" />
 
-# UC13: Định vị hiện vật trên bản đồ
-<img width="2550" height="3300" alt="Image" src="https://github.com/user-attachments/assets/a501e3a0-80cb-4e88-882c-bb7d817ee106" />
+# UC13: Tạo và xuất mã QR hiện vật
+<img width="2550" height="3300" alt="Image" src="https://github.com/user-attachments/assets/96e93650-58b3-4461-91a8-ce1ec68deb8b" />
 
-# UC14: Tạo và xuất mã QR hiện vật
-<img width="2550" height="3300" alt="Image" src="https://github.com/user-attachments/assets/edcca1db-8c67-452e-a027-2ae314147ff4" />
+# UC14: Xem bộ sưu tập hiện vật
+<img width="2550" height="3300" alt="Image" src="https://github.com/user-attachments/assets/4f863909-8e89-4d7b-8268-e950c3cb1217" />
+<img width="2550" height="3300" alt="Image" src="https://github.com/user-attachments/assets/fcabb6a9-6522-4954-a4ef-837e908395a7" />
 
-# UC15: Xem bộ sưu tập hiện vật
-<img width="2550" height="3300" alt="Image" src="https://github.com/user-attachments/assets/ed610522-62fc-48bb-b4e6-eebce4b522d2" />
-<img width="2550" height="3300" alt="Image" src="https://github.com/user-attachments/assets/56c115b5-3aad-463d-a46e-5c67800f2dad" />
+# UC15: Thanh toán và nhận mã kích hoạt 
+<img width="2550" height="3300" alt="Image" src="https://github.com/user-attachments/assets/964835c0-65b1-4feb-a7a3-a9b544b7f7af" />
+<img width="2550" height="3300" alt="Image" src="https://github.com/user-attachments/assets/cb657e50-d2cf-41e1-96a7-a1eb61314d7a" />
 </details>
 
 * [Sơ đồ hoạt động (Activity Diagram)](https://raw.githubusercontent.com/HuynhTien26/smart-museum-guide/main/docs/diagrams/activity-diagram.png) — *Quy trình quét mã QR, xác thực vé/mã PIN và đồng bộ thuyết minh âm thanh.*
