@@ -57,7 +57,8 @@ class ExhibitSyncManager {
   }
 
   public getExhibitByCode(code: string): Exhibit | undefined {
-    return this.getAllExhibits().find(ex => ex.code === code);
+    // Sửa ex.code thành ex.ExhibitID để khớp với model Exhibit chuẩn
+    return this.getAllExhibits().find(ex => ex.ExhibitID === code);
   }
 
   // FIX 2: Gắn kiểu (item: any) để gỡ lỗi ts(2339) không tìm thấy 'location'
