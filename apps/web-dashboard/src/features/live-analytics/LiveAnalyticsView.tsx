@@ -16,11 +16,12 @@ export const LiveAnalyticsView: React.FC<LiveAnalyticsProps> = ({
   guestUsers = 0, // Giá trị mặc định
 }) => {
   return (
+    // [UC-08] Màn hình Dashboard giám sát theo thời gian thực
     <div className="museum-container">
       <h2 className="museum-section-title">Thống Kê Real-time (Dữ Liệu Thật 100%)</h2>
 
       <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
-        {/* Ô 1: Đã đăng nhập (Active) */}
+        {/* Ô 1: Đã đăng nhập (Active) - [UC-08] Luồng chính hiển thị số thiết bị online */}
         <div
           style={{
             flex: '1 1 220px',
@@ -38,7 +39,7 @@ export const LiveAnalyticsView: React.FC<LiveAnalyticsProps> = ({
           </p>
         </div>
 
-        {/* Ô 2 (MỚI): Khách vãng lai chưa nhập PIN */}
+        {/* Ô 2 (MỚI): Khách vãng lai chưa nhập PIN - [UC-08] */}
         <div
           style={{
             flex: '1 1 220px',
@@ -56,7 +57,7 @@ export const LiveAnalyticsView: React.FC<LiveAnalyticsProps> = ({
           </p>
         </div>
 
-        {/* Ô 3: Lượt nghe */}
+        {/* Ô 3: Lượt nghe (Tính năng phụ trợ cho Báo cáo thống kê) */}
         <div
           style={{
             flex: '1 1 220px',
