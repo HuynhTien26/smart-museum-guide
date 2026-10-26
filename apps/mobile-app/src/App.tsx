@@ -1,6 +1,11 @@
+/**
+ * apps/mobile-app/src/App.tsx
+ */
 import React, { useState, useEffect } from 'react';
 import { PublicExhibitList } from './features/exhibits/PublicExhibitList';
 import { realtimeBus } from '../../../packages/shared/services/realtimeEventBus';
+// BƯỚC 1: Import realtimeSyncService
+import { realtimeSyncService } from '../../../packages/shared/services/realtimeSyncService';
 
 const SESSION_PIN_KEY = 'MUSEUM_SESSION_ACTIVE_PIN';
 
@@ -14,6 +19,13 @@ export default function App() {
 
   const hasActivePass = activePin !== null;
   const apiBaseUrl = `http://${window.location.hostname}:3000`;
+
+  // BƯỚC 2: Tự động kết nối Socket ngay khi khách mở Web/App
+  // Việc này giúp Backend đếm được số "Khách vãng lai" chính xác 100%
+  // Tự động báo trạng thái: Chưa nhập PIN là 'GUEST', đã nhập PIN là 'ACTIVE_USER'
+  useEffect(() => {
+    realtimeSyncService.connect(hasActivePass ? 'ACTIVE_USER' : 'GUEST');
+  }, [hasActivePass]);
 
   // Khi khách kích hoạt PIN thành công
   const handlePassActivated = (pin: string) => {
