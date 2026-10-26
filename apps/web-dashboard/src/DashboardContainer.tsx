@@ -19,7 +19,7 @@ export const DashboardContainer: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'EXHIBITS' | 'PASSES' | 'SQL_HISTORY' | 'ANALYTICS'>('PASSES');
 
   // Khai báo state tổng kết nối ở TRONG Component
-  const [totalConnections] = useState<number>(10); 
+  const [totalConnections, setTotalConnections] = useState<number>(0);
 
   // Khởi tạo passHistory rỗng, sẽ được fetch từ SQL
   const [passHistory, setPassHistory] = useState<ActivationPassRecord[]>([]);
@@ -65,6 +65,7 @@ export const DashboardContainer: React.FC = () => {
     return saved ? Number(saved) : 0;
   });
 
+  // [UC-08] Tính toán số lượng thiết bị đang kết nối dựa trên mã kích hoạt (Active)
   const activeUsers = passHistory
     .filter((pass) => pass.status === 'ACTIVE')
     .reduce((sum, pass) => sum + (pass.usedDevices || 0), 0);
@@ -110,9 +111,14 @@ export const DashboardContainer: React.FC = () => {
       setListenedCount((prev) => prev + 1);
     });
 
+    const unsubConnections = realtimeBus.subscribe('UPDATE_CONNECTIONS', (payload: any) => {
+      setTotalConnections(payload.total);
+    });
+
     return () => {
       unsubActivate();
       unsubPlay();
+      unsubConnections(); // Hủy lắng nghe khi đóng trang
     };
   }, []);
 
@@ -128,10 +134,11 @@ export const DashboardContainer: React.FC = () => {
       <nav style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 32px', borderBottom: '1px solid #33332F', backgroundColor: '#1E1E1C' }}>
         <h1 style={{ fontSize: '20px', margin: 0, color: '#D49B4B' }}>🏛️ BẢO TÀNG CHỨNG TÍCH CHIẾN TRANH - HỆ THỐNG QUẢN TRỊ</h1>
         <div style={{ display: 'flex', gap: '12px' }}>
+          {/* Menu Điều hướng - Render UI tương ứng với [UC-12], [UC-08] */}
           <button className="museum-btn-primary" style={{ backgroundColor: activeTab === 'EXHIBITS' ? '#D49B4B' : 'transparent', color: activeTab === 'EXHIBITS' ? '#141413' : '#F4F3EF', border: '1px solid #D49B4B' }} onClick={() => setActiveTab('EXHIBITS')}>Quản Lý Hiện Vật</button>
           <button className="museum-btn-primary" style={{ backgroundColor: activeTab === 'PASSES' ? '#D49B4B' : 'transparent', color: activeTab === 'PASSES' ? '#141413' : '#F4F3EF', border: '1px solid #D49B4B' }} onClick={() => setActiveTab('PASSES')}>Cấp Mã Vé & Lịch Sử</button>
           <button className="museum-btn-primary" style={{ backgroundColor: activeTab === 'SQL_HISTORY' ? '#D49B4B' : 'transparent', color: activeTab === 'SQL_HISTORY' ? '#141413' : '#F4F3EF', border: '1px solid #D49B4B' }} onClick={() => setActiveTab('SQL_HISTORY')}>Lịch Sử Thanh Toán SQL</button>
-          <button className="museum-btn-primary" style={{ backgroundColor: activeTab === 'ANALYTICS' ? '#D49B4B' : 'transparent', color: activeTab === 'ANALYTICS' ? '#141413' : '#F4F3EF', border: '1px solid #D49B4B' }} onClick={() => setActiveTab('ANALYTICS')}>Dashboard Thống Kê (Thầy)</button>
+          <button className="museum-btn-primary" style={{ backgroundColor: activeTab === 'ANALYTICS' ? '#D49B4B' : 'transparent', color: activeTab === 'ANALYTICS' ? '#141413' : '#F4F3EF', border: '1px solid #D49B4B' }} onClick={() => setActiveTab('ANALYTICS')}>Thống Kê</button>
         </div>
       </nav>
 
@@ -143,7 +150,7 @@ export const DashboardContainer: React.FC = () => {
           <LiveAnalyticsView 
             activeUsers={activeUsers} 
             listenedCount={listenedCount}
-            guestUsers={Math.max(0, totalConnections - activeUsers)} 
+            guestUsers={totalConnections} 
           />
         )}
       </main>
