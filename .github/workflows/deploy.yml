@@ -32,19 +32,19 @@ jobs:
       #   working-directory: ./apps/api-backend
       #   run: npm run test
 
-      - name: Deploy Backend to Server (Ví dụ qua SSH/VPS)
-        # Đây là bước đẩy code lên Server thật. (Cần cấu hình biến bảo mật trong GitHub Secrets)
-        # Sử dụng appleboy/ssh-action để login vào VPS và cập nhật code, restart PM2 / Docker
-        uses: appleboy/ssh-action@master
-        with:
-          host: ${{ secrets.VPS_HOST }}
-          username: ${{ secrets.VPS_USERNAME }}
-          key: ${{ secrets.VPS_SSH_KEY }}
-          script: |
-            cd /var/www/museum-api-backend
-            git pull origin main
-            npm install
-            pm2 restart museum-backend
+      # - name: Deploy Backend to Server (Ví dụ qua SSH/VPS)
+      #   # Đây là bước đẩy code lên Server thật. (Cần cấu hình biến bảo mật trong GitHub Secrets)
+      #   # Sử dụng appleboy/ssh-action để login vào VPS và cập nhật code, restart PM2 / Docker
+      #   uses: appleboy/ssh-action@master
+      #   with:
+      #     host: ${{ secrets.VPS_HOST }}
+      #     username: ${{ secrets.VPS_USERNAME }}
+      #     key: ${{ secrets.VPS_SSH_KEY }}
+      #     script: |
+      #       cd /var/www/museum-api-backend
+      #       git pull origin main
+      #       npm install
+      #       pm2 restart museum-backend
 
   # ==========================================
   # JOB 2: XỬ LÝ MOBILE APP (REACT/VITE)
@@ -72,19 +72,19 @@ jobs:
           VITE_API_URL: ${{ secrets.PRODUCTION_API_URL }} 
         run: npm run build
 
-      - name: Deploy Mobile App to Vercel/Netlify/S3
-        # Chỗ này thường dùng CLI của Vercel, Netlify hoặc copy thư mục 'dist' lên AWS S3
-        # Ví dụ deploy lên Netlify:
-        uses: nwtgck/actions-netlify@v2.0
-        with:
-          publish-dir: './apps/mobile-app/dist'
-          production-branch: main
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          deploy-message: "Deploy Mobile App"
-          enable-commit-comment: false
-        env:
-          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
-          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_MOBILE_SITE_ID }}
+      # - name: Deploy Mobile App to Vercel/Netlify/S3
+      #   # Chỗ này thường dùng CLI của Vercel, Netlify hoặc copy thư mục 'dist' lên AWS S3
+      #   # Ví dụ deploy lên Netlify:
+      #   uses: nwtgck/actions-netlify@v2.0
+      #   with:
+      #     publish-dir: './apps/mobile-app/dist'
+      #     production-branch: main
+      #     github-token: ${{ secrets.GITHUB_TOKEN }}
+      #     deploy-message: "Deploy Mobile App"
+      #     enable-commit-comment: false
+      #   env:
+      #     NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+      #     NETLIFY_SITE_ID: ${{ secrets.NETLIFY_MOBILE_SITE_ID }}
 
   # ==========================================
   # JOB 3: XỬ LÝ WEB DASHBOARD (REACT/VITE)
@@ -110,14 +110,14 @@ jobs:
           VITE_API_URL: ${{ secrets.PRODUCTION_API_URL }}
         run: npm run build
 
-      - name: Deploy Dashboard to Vercel/Netlify/S3
-        uses: nwtgck/actions-netlify@v2.0
-        with:
-          publish-dir: './apps/web-dashboard/dist'
-          production-branch: main
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          deploy-message: "Deploy Dashboard"
-          enable-commit-comment: false
-        env:
-          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
-          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_DASHBOARD_SITE_ID }}
+      # - name: Deploy Dashboard to Vercel/Netlify/S3
+      #   uses: nwtgck/actions-netlify@v2.0
+      #   with:
+      #     publish-dir: './apps/web-dashboard/dist'
+      #     production-branch: main
+      #     github-token: ${{ secrets.GITHUB_TOKEN }}
+      #     deploy-message: "Deploy Dashboard"
+      #     enable-commit-comment: false
+      #   env:
+      #     NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+      #     NETLIFY_SITE_ID: ${{ secrets.NETLIFY_DASHBOARD_SITE_ID }}
