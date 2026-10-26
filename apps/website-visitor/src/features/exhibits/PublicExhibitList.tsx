@@ -1,8 +1,3 @@
-/**
- * ============================================================================
- * TỆP: apps/mobile-app/src/features/exhibits/PublicExhibitList.tsx
- * ============================================================================
- */
 // [UC-02] Thư viện jsQR dùng để giải mã QR Code từ Camera
 import jsQR from 'jsqr';
 import React, { useEffect, useState, useRef } from 'react';
