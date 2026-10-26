@@ -1,6 +1,13 @@
+/**
+ * apps/api-backend/src/server.ts
+ */
 import express, { Request, Response } from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+// Chú ý: import Server từ socket.io và http (để tạo máy chủ gắn chung Express và Socket)
+import { Server } from 'socket.io';
+import http from 'http'; 
+
 import { exhibitBus } from './bus/exhibitBus';
 import { passDao } from './dao/passDao';
 
@@ -9,9 +16,48 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// [UC-08] Khởi tạo máy chủ HTTP và Socket.io
+const server = http.createServer(app);
+const io = new Server(server, {
+  cors: {
+    origin: "*", // Hoặc cấu hình domain frontend của bạn
+    methods: ["GET", "POST"]
+  }
+});
+
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
+
+
+// [UC-08] Lắng nghe sự kiện kết nối WebSocket (Chỉ đếm Khách vãng lai chưa nhập PIN)
+io.on('connection', (socket) => {
+  socket.data.role = socket.handshake.query.role || 'ADMIN';
+  socket.data.tabId = socket.handshake.query.tabId || socket.id;
+
+  const broadcastGuestCount = () => {
+    const uniqueGuests = new Set<string>();
+    io.sockets.sockets.forEach((s) => {
+      if (s.data.role === 'GUEST') {
+        uniqueGuests.add(s.data.tabId);
+      }
+    });
+    io.emit('UPDATE_CONNECTIONS', { total: uniqueGuests.size });
+  };
+
+  broadcastGuestCount();
+
+  // Cập nhật ngay lập tức khi khách vừa nhập PIN hoặc vừa Đăng xuất PIN
+  socket.on('UPDATE_ROLE', (data: { role: string; tabId?: string }) => {
+    socket.data.role = data.role;
+    if (data.tabId) socket.data.tabId = data.tabId;
+    broadcastGuestCount();
+  });
+
+  socket.on('disconnect', () => {
+    broadcastGuestCount();
+  });
+});
 
 // Bộ nhớ tạm quản lý thời gian chờ (2 giây) để phân biệt khách đóng hẳn tab hay chỉ bấm F5
 const pendingReleaseTimers = new Map<string, NodeJS.Timeout>();
@@ -229,7 +275,8 @@ app.post('/api/passes/release', async (req: Request, res: Response) => {
   }
 });
 
-app.listen(PORT, () => {
+// [UC-08] Thay đổi từ app.listen sang server.listen để chạy chung HTTP và Socket.io
+server.listen(PORT, () => {
   console.log(`🚀 Server đang chạy tại: http://localhost:${PORT}`);
   console.log(`👉 Xem danh sách hiện vật tại: http://localhost:${PORT}/api/exhibits`);
 });
