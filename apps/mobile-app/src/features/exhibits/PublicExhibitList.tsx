@@ -3,6 +3,7 @@
  * TỆP: apps/mobile-app/src/features/exhibits/PublicExhibitList.tsx
  * ============================================================================
  */
+// [UC-02] Thư viện jsQR dùng để giải mã QR Code từ Camera
 import jsQR from 'jsqr';
 import React, { useEffect, useState, useRef } from 'react';
 import '../../styles/mobileStyles.css';
@@ -25,8 +26,10 @@ interface Props {
   onExhibitPlayed?: (exhibitCode: string) => void;
 }
 
+// [UC-01] Định nghĩa các ngôn ngữ được hỗ trợ
 type LangKey = 'vi' | 'en' | 'fr' | 'ja' | 'ko';
 
+// [UC-04] Cấu trúc dữ liệu của một câu chữ đồng bộ thời gian
 interface LyricLine {
   time: string;
   seconds: number;
@@ -34,6 +37,7 @@ interface LyricLine {
 }
 
 // 1. DANH SÁCH 13 PHÒNG TRƯNG BÀY CHÍNH THỨC
+// [UC-06] Cấu trúc dữ liệu phục vụ bản đồ 3 tầng và 13 khu vực
 const OFFICIAL_ZONES = [
   { pin: 1, floor: 'floor2', color: 'red', vi: 'NHỮNG SỰ THẬT LỊCH SỬ', en: 'HISTORICAL TRUTHS', fr: 'VÉRITÉS HISTORIQUES', ja: '歴史の真実', ko: '역사적 진실', defaultExhibit: '302' },
   { pin: 2, floor: 'floor2', color: 'red', vi: 'HỒI NIỆM (BỘ SƯU TẬP ẢNH)', en: 'REQUIEM (PHOTO COLLECTION)', fr: 'REQUIEM (COLLECTION DE PHOTOS)', ja: 'レクイエム (写真展)', ko: '레퀴엠 (사진전)', defaultExhibit: '302' },
@@ -51,6 +55,7 @@ const OFFICIAL_ZONES = [
 ];
 
 // 2. TỪ ĐIỂN UI
+// [UC-01] Từ điển đa ngôn ngữ cho Giao diện UI
 const I18N: Record<LangKey, any> = {
   vi: {
     code: 'VI', name: 'Tiếng Việt', native: 'Tiếng Việt (Mặc định)', flag: '🇻🇳', voiceLang: 'vi-VN',
@@ -492,7 +497,7 @@ const I18N: Record<LangKey, any> = {
     mapWC: '화장실', mapCafe: '카페', mapCafeSub: 'Museum Coffee',
     mapSouvenir: '기념품', mapSouvenirSub: 'Souvenir Shop',
     mapTicket: '매표소', mapTicketSub: 'Ticket booth',
-    mapEntrance: 'Vo Van Tan 거리 (입구)', mapExit: 'Le Quy Don 거리 (출구)',
+    mapEntrance: 'Vo Van Tan 거리 (입구)', mapExit: 'Le Quy 단 거리 (출구)',
     historyBadge: '관람 기록',
     historyTitle: '스캔 및 감상한 전시물',
     btnRefresh: '새로고침',
@@ -588,17 +593,23 @@ export const PublicExhibitList: React.FC<Props> = ({
   const apiBaseUrl = '';
 
   const [exhibits, setExhibits] = useState<DbExhibit[]>([]);
+  
+  // [UC-14] Trạng thái kiểm tra xem khách hàng có vé không (isUnlocked)
   const [isUnlocked, setIsUnlocked] = useState<boolean>(hasActivePass);
   useEffect(() => { setIsUnlocked(hasActivePass); }, [hasActivePass]);
 
   const [activeTab, setActiveTab] = useState<'HOME' | 'MAP' | 'HISTORY' | 'SETTINGS'>('HOME');
   const [selectedZone, setSelectedZone] = useState<number | 'ALL'>('ALL');
+  
+  // [UC-01] State quản lý ngôn ngữ đang được chọn
   const [lang, setLang] = useState<LangKey>('vi');
   const t = I18N[lang];
 
+  // [UC-06] Filter tầng bản đồ (Tầng Trệt, Lầu 1, Lầu 2)
   const [mapFloorFilter, setMapFloorFilter] = useState<'all' | 'ground' | 'floor1' | 'floor2'>('all');
   const [selectedMapPin, setSelectedMapPin] = useState<number>(13);
 
+  // [UC-07] Lịch sử nghe: Đọc từ LocalStorage
   const [scannedHistory, setScannedHistory] = useState<string[]>(() => {
     try {
       const saved = localStorage.getItem('MUSEUM_SCANNED_HISTORY');
@@ -610,11 +621,14 @@ export const PublicExhibitList: React.FC<Props> = ({
   const [autoScrollLyrics, setAutoScrollLyrics] = useState<boolean>(true);
   const [playbackSpeed, setPlaybackSpeed] = useState<number>(1.0);
 
+  // Quản lý trạng thái các modal UI
   const [modalStep, setModalStep] = useState<
     'NONE' | 'TEASER' | 'QR_PAY' | 'PIN_INPUT' | 'SCANNER' | 'NUMPAD' | 'LANGUAGE' | 'LOGOUT_CONFIRM'
   >('NONE');
 
   const [selectedExhibit, setSelectedExhibit] = useState<DbExhibit | null>(null);
+  
+  // [UC-04] Các state phục vụ chạy chữ đồng bộ (karaoke)
   const [showLyricsModal, setShowLyricsModal] = useState<boolean>(false);
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [activeLineIdx, setActiveLineIdx] = useState<number>(0);
@@ -623,12 +637,17 @@ export const PublicExhibitList: React.FC<Props> = ({
   const [durationSec, setDurationSec] = useState<number>(0);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
+  // [UC-15] State quản lý chuỗi mã PIN khách hàng nhập
   const [pinInput, setPinInput] = useState<string>('');
   const [pinError, setPinError] = useState<string>('');
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
+  
+  // [UC-03] Bộ đệm (buffer) để lưu số mà khách đang gõ trên Numpad ảo
   const [numpadBuffer, setNumpadBuffer] = useState<string>('');
   const [scanSuccessMsg, setScanSuccessMsg] = useState<string>('');
   const [flashlightOn, setFlashlightOn] = useState<boolean>(false);
+  
+  // [UC-02] Tham chiếu đến thẻ Video và Canvas để xử lý hình ảnh camera
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null); // THÊM DÒNG NÀY ĐỂ XỬ LÝ ẢNH QR
 
@@ -641,11 +660,13 @@ export const PublicExhibitList: React.FC<Props> = ({
       .catch((err) => console.error('Lỗi tải hiện vật:', err));
   }, [apiBaseUrl]);
 
+  // [UC-07] Lưu lịch sử xuống LocalStorage
   useEffect(() => {
     localStorage.setItem('MUSEUM_SCANNED_HISTORY', JSON.stringify(scannedHistory));
   }, [scannedHistory]);
 
   // 2. XỬ LÝ CAMERA VÀ QUÉT MÃ QR THẬT BẰNG JSQR (ĐÃ SỬA LỖI TREO MÁY TRÊN ZALO BROWSER)
+  // [UC-02] Hàm quét và giải mã hình ảnh lấy từ thẻ <video>
   useEffect(() => {
     let stream: MediaStream | null = null;
     let isMounted = true;
@@ -666,7 +687,7 @@ export const PublicExhibitList: React.FC<Props> = ({
         context.drawImage(video, 0, 0, canvas.width, canvas.height);
         const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
         
-        // Dùng jsQR để giải mã
+        // [UC-02] Dùng thư viện jsQR để phân tích khung ảnh hiện tại
         const code = jsQR(imageData.data, imageData.width, imageData.height, {
           inversionAttempts: "dontInvert",
         });
@@ -686,6 +707,7 @@ export const PublicExhibitList: React.FC<Props> = ({
           }
 
           const cleanCode = qrData.trim().toUpperCase();
+          // [UC-02] Đối chiếu mã QR vừa đọc được với cơ sở dữ liệu
           const match = exhibits.find(
             (e) =>
               e.ExhibitID.toUpperCase() === cleanCode ||
@@ -707,6 +729,7 @@ export const PublicExhibitList: React.FC<Props> = ({
       requestAnimationFrameId = requestAnimationFrame(scanQRCode);
     };
 
+    // [UC-02] Yêu cầu quyền truy cập Camera (Luồng E1)
     if (modalStep === 'SCANNER') {
       if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
         navigator.mediaDevices
@@ -745,6 +768,7 @@ export const PublicExhibitList: React.FC<Props> = ({
   }, [modalStep, exhibits]); // Lắng nghe thêm exhibits để đảm bảo lấy đúng dữ liệu
 
   // HÀM MỚI: Xử lý gom nhóm đa ngôn ngữ đồng nhất
+  // [UC-01] Hàm bóc tách nội dung thuyết minh dựa trên ngôn ngữ đang chọn
   const getTranslationData = (ex: DbExhibit | null, currentLang: LangKey) => {
     if (!ex) return { title: '', content: '', audio: '' };
     
@@ -793,6 +817,7 @@ export const PublicExhibitList: React.FC<Props> = ({
     return t.floor2;
   };
 
+  // [UC-04] Hàm băm văn bản dài thành từng dòng để đồng bộ hiển thị
   const getLocalizedSentences = (ex: DbExhibit | null, totalDuration: number): LyricLine[] => {
     if (!ex) return [];
     let rawText = currentTrans.content;
@@ -821,6 +846,7 @@ export const PublicExhibitList: React.FC<Props> = ({
   const sentences = getLocalizedSentences(selectedExhibit, durationSec);
 
   // ĐỒNG BỘ AUDIO VÀ TIMELINE THEO NGÔN NGỮ
+  // [UC-01] Tự động nạp Audio mới khi người dùng đổi cờ ngôn ngữ (lang)
   useEffect(() => {
     if (!selectedExhibit || !isUnlocked) return;
     setCurrentTimeSec(0);
@@ -844,6 +870,7 @@ export const PublicExhibitList: React.FC<Props> = ({
     }
   }, [selectedExhibit?.ExhibitID, isUnlocked, lang]); // lang ở đây giúp âm thanh tự đổi khi ấn chọn cờ ngôn ngữ!
 
+  // Mô phỏng timeline nếu hiện vật không có file Audio
   useEffect(() => {
     if (!isPlaying || !selectedExhibit || hasAudioFile) return;
 
@@ -862,6 +889,7 @@ export const PublicExhibitList: React.FC<Props> = ({
     return () => clearInterval(timer);
   }, [isPlaying, selectedExhibit, hasAudioFile, durationSec, sentences.length, playbackSpeed]);
 
+  // [UC-04] Lắng nghe currentTimeSec thay đổi để highlight câu chữ hiện hành
   useEffect(() => {
     if (!selectedExhibit || sentences.length === 0 || durationSec <= 0) return;
     const ratio = Math.min(0.999, Math.max(0, currentTimeSec / durationSec));
@@ -871,7 +899,7 @@ export const PublicExhibitList: React.FC<Props> = ({
     }
   }, [currentTimeSec, durationSec, sentences.length, selectedExhibit]);
 
-  // Logic Cuộn mượt
+  // Logic Cuộn mượt (Auto scroll)
   const isUserScrolling = useRef<boolean>(false);
   const scrollTimeout = useRef<NodeJS.Timeout | null>(null);
 
@@ -951,9 +979,12 @@ export const PublicExhibitList: React.FC<Props> = ({
     window.speechSynthesis.speak(utterance);
   };
 
+  // [UC-14] Bước 6: Kiểm tra quyền truy cập nội dung đầy đủ
   const handleSelectExhibit = (exhibit: DbExhibit) => {
     setSelectedExhibit(exhibit);
+    // Kiểm tra trạng thái isUnlocked (đã kích hoạt mã PIN chưa)
     if (isUnlocked) {
+      // Khách đã mua vé (UC-14: Luồng A1 - Bỏ qua Popup và mở nội dung)
       setActiveLineIdx(0);
       setCurrentTimeSec(0);
       setIsPlaying(true);
@@ -966,6 +997,7 @@ export const PublicExhibitList: React.FC<Props> = ({
         audioRef.current.play().catch(() => {});
       }
 
+      // [UC-07] Ghi nhận lịch sử nghe
       setScannedHistory((prev) => {
         const filtered = prev.filter((id) => id !== exhibit.ExhibitID);
         return [exhibit.ExhibitID, ...filtered];
@@ -973,10 +1005,12 @@ export const PublicExhibitList: React.FC<Props> = ({
 
       if (onExhibitPlayed) onExhibitPlayed(exhibit.ExhibitID);
     } else {
+      // [UC-14] Bước 7: Khách vãng lai: Hiển thị Popup giới thiệu (Teaser) yêu cầu mua/kích hoạt
       setModalStep('TEASER');
     }
   };
 
+  // [UC-05] Xử lý tua khi click vào một dòng chữ cụ thể
   const handleJumpToLine = (idx: number) => {
     const safeIdx = Math.max(0, Math.min(sentences.length - 1, idx));
     if (safeIdx <= activeLineIdx) {
@@ -1013,10 +1047,12 @@ export const PublicExhibitList: React.FC<Props> = ({
     }, 550);
   };
 
+  // [UC-03] Xử lý bấm phím ảo
   const handleNumpadPress = (digit: string) => {
     setNumpadBuffer((prev) => (prev.length >= 6 ? digit : prev + digit));
   };
 
+  // [UC-03] Xử lý xác nhận mã từ phím ảo
   const handleSubmitNumpad = () => {
     const cleanCode = numpadBuffer.trim().toUpperCase();
     const match = exhibits.find(
@@ -1031,6 +1067,7 @@ export const PublicExhibitList: React.FC<Props> = ({
     }
   };
 
+  // [UC-06] Xử lý việc nghe thuyết minh tổng hợp của một khu vực từ Bản đồ
   const handleOpenExhibitByMapZone = () => {
     const zoneInfo = OFFICIAL_ZONES.find((z) => z.pin === selectedMapPin) || OFFICIAL_ZONES[12];
 
@@ -1093,6 +1130,7 @@ export const PublicExhibitList: React.FC<Props> = ({
     }
   };
 
+  // [UC-15] Hàm xác thực mã PIN (Gửi API check PassID trong SQL Server)
   const handleVerifyPin = async (e: React.FormEvent) => {
     e.preventDefault();
     const cleanPin = pinInput.trim().toUpperCase();
@@ -1108,6 +1146,7 @@ export const PublicExhibitList: React.FC<Props> = ({
       });
       const result = await response.json();
       if (result.success) {
+        // [UC-15] Xác thực thành công: Gán quyền isUnlocked = true
         setIsUnlocked(true);
         setModalStep('NONE');
         onPassActivated(cleanPin);
@@ -1183,6 +1222,7 @@ export const PublicExhibitList: React.FC<Props> = ({
           </h1>
         </div>
 
+        {/* [UC-01] Nút kích hoạt modal chọn ngôn ngữ */}
         <button
           onClick={() => setModalStep('LANGUAGE')}
           className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-museum-surface hover:bg-museum-card active:scale-95 border border-museum-gold/40 transition shadow-sm"
@@ -1318,6 +1358,7 @@ export const PublicExhibitList: React.FC<Props> = ({
             </section>
 
             {/* DANH SÁCH HIỆN VẬT */}
+            {/* [UC-14] Bước 1 & 2: Truy cập trang chủ và Hiển thị danh sách hiện vật theo khu vực trưng bày */}
             <section className="space-y-2.5">
               <div className="flex items-center justify-between">
                 <h3 className="font-serif text-base font-bold text-museum-cream">{t.sectionFeatured}</h3>
@@ -1345,6 +1386,7 @@ export const PublicExhibitList: React.FC<Props> = ({
                     return (
                       <article
                         key={ex.ExhibitID}
+                        // [UC-14] Bước 5: Khách chọn "Xem chi tiết/Nghe thuyết minh" 
                         onClick={() => handleSelectExhibit(ex)}
                         className={`group relative rounded-2xl p-3 bg-museum-surface hover:bg-museum-card border ${
                           selectedExhibit?.ExhibitID === ex.ExhibitID
@@ -1352,6 +1394,7 @@ export const PublicExhibitList: React.FC<Props> = ({
                             : 'border-museum-border'
                         } transition cursor-pointer flex items-center gap-3 shadow-md active:scale-[0.99]`}
                       >
+                        {/* [UC-14] Bước 3 & 4: Xem trước hình ảnh, tên, khu vực và mô tả ngắn */}
                         <div className="relative w-16 h-16 rounded-xl bg-gradient-to-br from-[#2C2721] to-[#171614] border border-museum-border flex items-center justify-center shrink-0 overflow-hidden">
                           <span className="absolute top-1 left-1 z-10 px-1.5 py-0.5 rounded bg-museum-bg/90 border border-museum-gold/40 text-museum-gold font-extrabold text-[9px]">
                             #{ex.ExhibitID}
@@ -1368,6 +1411,7 @@ export const PublicExhibitList: React.FC<Props> = ({
                             <span className="px-1.5 py-0.5 rounded bg-red-600/20 text-red-300 border border-red-500/30">
                               {t.zonePrefix} {ex.ZoneCode}
                             </span>
+                            {/* [UC-14] Hiển thị trạng thái khóa Audio nếu chưa có vé */}
                             {isUnlocked ? (
                               <span className="text-emerald-400">{t.statusUnlocked}</span>
                             ) : (
@@ -1411,6 +1455,7 @@ export const PublicExhibitList: React.FC<Props> = ({
         )}
 
         {/* TAB B: BẢN ĐỒ LỘ TRÌNH THAM QUAN CHÍNH THỨC (SVG 3 TẦNG) */}
+        {/* [UC-06] Giao diện bản đồ SVG và bộ lọc Tầng Trệt, Lầu 1, Lầu 2 */}
         {activeTab === 'MAP' && (
           <div className="px-3.5 pt-3.5 space-y-3.5">
             <div className="rounded-2xl bg-[#3B4D6B] border border-white/15 px-3.5 py-2.5 text-center shadow-lg">
@@ -1633,6 +1678,7 @@ export const PublicExhibitList: React.FC<Props> = ({
         )}
 
         {/* TAB C: ĐÃ NGHE (HISTORY) */}
+        {/* [UC-07] Giao diện lịch sử các hiện vật đã nghe */}
         {activeTab === 'HISTORY' && (
           <div className="px-4 pt-4 space-y-4">
             <div className="flex items-center justify-between">
@@ -1784,6 +1830,7 @@ export const PublicExhibitList: React.FC<Props> = ({
       </div>
 
       {/* 3. STICKY MINI AUDIO PLAYER */}
+      {/* [UC-07] Giao diện Mini Player để điều khiển âm thanh khi đổi Tab */}
       {isUnlocked && selectedExhibit && !showLyricsModal && (
         <div className="fixed bottom-[68px] left-1/2 -translate-x-1/2 w-[calc(100%-24px)] max-w-[406px] z-30 bg-[#23211E]/95 backdrop-blur-md border border-museum-gold/35 rounded-2xl p-2.5 shadow-2xl">
           <div className="w-full h-1.5 bg-museum-bg rounded-full overflow-hidden mb-1.5">
@@ -1911,6 +1958,7 @@ export const PublicExhibitList: React.FC<Props> = ({
       </nav>
 
       {/* 5. GIAO DIỆN THUYẾT MINH LYRICS */}
+      {/* [UC-04] Giao diện Lyrics hiển thị chữ đồng bộ */}
       {showLyricsModal && selectedExhibit && (
         <div className="fixed inset-0 max-w-[430px] mx-auto z-50 flex flex-col lyrics-stage text-white overflow-hidden">
           <div className="px-4 pt-4 pb-3 flex items-center justify-between border-b border-white/10 shrink-0">
@@ -1929,6 +1977,7 @@ export const PublicExhibitList: React.FC<Props> = ({
             </div>
 
             <div className="flex items-center gap-1.5 shrink-0">
+              {/* Nút gọi Modal Chọn Ngôn ngữ từ màn hình phát */}
               <button
                 onClick={() => setModalStep('LANGUAGE')}
                 className="px-2.5 py-1 rounded-full bg-white/10 hover:bg-white/15 border border-white/15 text-[11px] text-white flex items-center gap-1"
@@ -1967,6 +2016,7 @@ export const PublicExhibitList: React.FC<Props> = ({
                 <div
                   key={idx}
                   id={`lyric-line-${idx}`}
+                  // [UC-05] Sự kiện onClick cho phép chạm vào câu chữ để nghe lại (tua tới) đoạn tương ứng 
                   onClick={() => handleJumpToLine(idx)}
                   className={`lyric-line ${stateClass} cursor-pointer py-2 px-3 rounded-2xl hover:bg-white/5 select-none`}
                 >
@@ -2043,6 +2093,7 @@ export const PublicExhibitList: React.FC<Props> = ({
       )}
 
       {/* 6. MODALS */}
+      {/* [UC-02] Giao diện Màn hình quét Camera */}
       {modalStep === 'SCANNER' && (
         <div className="fixed inset-0 max-w-[430px] mx-auto z-50 bg-black flex flex-col justify-between">
           <div
@@ -2126,6 +2177,7 @@ export const PublicExhibitList: React.FC<Props> = ({
         </div>
       )}
 
+      {/* [UC-03] Giao diện Bàn phím số Numpad cho việc nhập tay */}
       {modalStep === 'NUMPAD' && (
         <div className="fixed inset-0 max-w-[430px] mx-auto z-50 flex flex-col justify-end sheet-backdrop bg-black/70">
           <div className="bg-museum-surface border-t border-museum-gold/30 rounded-t-3xl p-5 space-y-4 shadow-2xl">
@@ -2212,6 +2264,7 @@ export const PublicExhibitList: React.FC<Props> = ({
         </div>
       )}
 
+      {/* [UC-01] Giao diện lựa chọn Đổi ngôn ngữ thuyết minh */}
       {modalStep === 'LANGUAGE' && (
         <div className="fixed inset-0 max-w-[430px] mx-auto z-50 flex flex-col justify-end sheet-backdrop bg-black/70">
           <div className="bg-museum-surface border-t border-museum-gold/30 rounded-t-3xl p-5 space-y-3.5 shadow-2xl">
@@ -2315,6 +2368,7 @@ export const PublicExhibitList: React.FC<Props> = ({
         </div>
       )}
 
+      {/* [UC-14] Bước 7: Khách vãng lai chưa kích hoạt - Hiển thị Popup giới thiệu (Teaser) yêu cầu khách hàng mua vé/kích hoạt mã */}
       {modalStep === 'TEASER' && selectedExhibit && (
         <div className="fixed inset-0 max-w-[430px] mx-auto z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="w-full max-w-sm bg-museum-surface border border-museum-gold/45 rounded-3xl p-6 text-center space-y-3 shadow-2xl">
@@ -2397,6 +2451,7 @@ export const PublicExhibitList: React.FC<Props> = ({
         </div>
       )}
 
+      {/* [UC-15] Giao diện Modal Form để nhập mã PIN kích hoạt */}
       {modalStep === 'PIN_INPUT' && (
         <div className="fixed inset-0 max-w-[430px] mx-auto z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="w-full max-w-sm bg-museum-surface border border-museum-gold/45 rounded-3xl p-6 text-center space-y-3 shadow-2xl">
