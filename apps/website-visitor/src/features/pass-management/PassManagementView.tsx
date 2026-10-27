@@ -1,10 +1,6 @@
-/**
- * ============================================================================
- * TỆP: apps/mobile-app/src/features/pass-management/PassManagementView.tsx
- * MỤC ĐÍCH: Màn hình Nhập mã PIN kích hoạt trên Mobile Website
- *           (Kiểm tra trực tiếp cột PassID trong bảng PassHistory của MuseumDB)
- * ============================================================================
- */
+/*
+MỤC ĐÍCH: Màn hình Nhập mã PIN kích hoạt
+*/
 
 import React, { useState } from 'react';
 import '../../../../../packages/shared/styles/mobileStyles.css';
@@ -103,7 +99,6 @@ export const PassManagementView: React.FC<Props> = ({
             </button>
           </form>
 
-          {/* Gợi ý nhanh 2 mã mẫu trong SQL */}
           <div style={{ marginTop: '16px', paddingTop: '12px', borderTop: '1px solid #35322F' }}>
             <div style={{ fontSize: '11px', color: '#D49B4B', marginBottom: '8px', fontWeight: 700 }}>
               Mã PIN mẫu tại Quầy & Đi Đoàn:
