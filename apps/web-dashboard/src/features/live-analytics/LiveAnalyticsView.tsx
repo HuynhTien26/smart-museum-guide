@@ -18,7 +18,7 @@ export const LiveAnalyticsView: React.FC<LiveAnalyticsProps> = ({
   return (
     // [UC-08] Màn hình Dashboard giám sát theo thời gian thực
     <div className="museum-container">
-      <h2 className="museum-section-title">Thống Kê Real-time (Dữ Liệu Thật 100%)</h2>
+      <h2 className="museum-section-title">Bảng Thống Kê</h2>
 
       <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
         {/* Ô 1: Đã đăng nhập (Active) - [UC-08] Luồng chính hiển thị số thiết bị online */}
