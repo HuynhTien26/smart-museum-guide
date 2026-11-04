@@ -42,7 +42,8 @@ export const DashboardContainer: React.FC = () => {
             usedDevices: sqlRecord.UsedDevices || 0,
             priceVnd: sqlRecord.Amount || 0,
             isInternalAdmin: sqlRecord.PackageType === 'Mã Admin',
-            status: (sqlRecord.Status || 'UNUSED') as any,
+            // 1
+            status: localStorage.getItem(`LOCKED_${sqlRecord.PassID}`) === 'true' ? 'REVOKED' : (sqlRecord.Status || 'UNUSED') as any,
             issuedBy: 'Hệ thống SQL',
             createdAt: sqlRecord.PurchaseDate ? new Date(sqlRecord.PurchaseDate).toLocaleString('vi-VN') : '',
             expiresAt: '24h kể từ khi kích hoạt',
@@ -56,8 +57,8 @@ export const DashboardContainer: React.FC = () => {
     };
 
     fetchPasses();
-    const interval = setInterval(fetchPasses, 3000); // Tự động đồng bộ SQL mỗi 3 giây
-    return () => clearInterval(interval);
+    // const interval = setInterval(fetchPasses, 3000); // Tự động đồng bộ SQL mỗi 3 giây
+   //  return () => clearInterval(interval);
   }, []);
 
   const [listenedCount, setListenedCount] = useState<number>(() => {
@@ -66,6 +67,8 @@ export const DashboardContainer: React.FC = () => {
   });
 
   // [UC-08] Tính toán số lượng thiết bị đang kết nối dựa trên mã kích hoạt (Active)
+  // Lấy tổng số thiết bị đang kết nối từ passHistory 
+  // Đang Online (Đã nhập PIN)
   const activeUsers = passHistory
     .filter((pass) => pass.status === 'ACTIVE')
     .reduce((sum, pass) => sum + (pass.usedDevices || 0), 0);
@@ -106,11 +109,11 @@ export const DashboardContainer: React.FC = () => {
         return updated;
       });
     });
-
+    // Số lượng "Tổng Lượt Nghe"
     const unsubPlay = realtimeBus.subscribe('PLAY_EXHIBIT', () => {
       setListenedCount((prev) => prev + 1);
     });
-
+    // Số lượng "Khách Vãng Lai"
     const unsubConnections = realtimeBus.subscribe('UPDATE_CONNECTIONS', (payload: any) => {
       setTotalConnections(payload.total);
     });
@@ -122,12 +125,26 @@ export const DashboardContainer: React.FC = () => {
     };
   }, []);
 
-  const handleRevokePass = (passId: string) => {
-    setPassHistory((prev) =>
-      prev.map((item) => (item.id === passId ? { ...item, status: 'REVOKED' as const } : item))
-    );
-    realtimeSyncService.broadcastFromDashboard('PASS_REVOKED', { passId });
-  };
+  const handleRevokePass = async (passId: string) => {
+    localStorage.setItem(`LOCKED_${passId}`, 'true');
+  // 1. Cập nhật giao diện và bắn WebSocket ngay lập tức (giữ nguyên)
+  setPassHistory((prev) =>
+    prev.map((item) => (item.id === passId ? { ...item, status: 'REVOKED' as const } : item))
+  );
+  realtimeSyncService.broadcastFromDashboard('PASS_REVOKED', { passId });
+
+  // 2. BỔ SUNG: Gọi API cập nhật xuống SQL Server để không bị đè dữ liệu cũ
+  try {
+    await fetch(`http://${window.location.hostname}:3000/api/passes/${passId}/revoke`, {
+      method: 'PUT', // Hoặc POST tùy theo Backend của bạn viết
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+  } catch (error) {
+    console.error('Lỗi khi cập nhật SQL:', error);
+  }
+};
 
   return (
     <div style={{ backgroundColor: '#141413', minHeight: '100vh', color: '#F4F3EF' }}>
@@ -148,9 +165,7 @@ export const DashboardContainer: React.FC = () => {
         {activeTab === 'SQL_HISTORY' && <PaymentHistoryView />}
         {activeTab === 'ANALYTICS' && (
           <LiveAnalyticsView 
-            activeUsers={activeUsers} 
-            listenedCount={listenedCount}
-            guestUsers={totalConnections} 
+             
           />
         )}
       </main>

@@ -5,7 +5,7 @@ GO
 USE MuseumDB;
 GO
 
--- 2. TẠO BẢNG HIỆN VẬT (Đã gộp cột Đa ngôn ngữ)
+-- 2. TẠO BẢNG HIỆN VẬT (BẢNG TRỐNG)
 CREATE TABLE Exhibits (
     ExhibitID VARCHAR(50) PRIMARY KEY,
     ZoneCode INT NOT NULL,
@@ -13,52 +13,56 @@ CREATE TABLE Exhibits (
     ImageBase64 VARCHAR(MAX),
     AudioBase64_VI VARCHAR(MAX),
     Transcript_VI NVARCHAR(MAX),
-    TranslationsJSON NVARCHAR(MAX) -- Chứa chuỗi JSON cho các ngôn ngữ khác
+    TranslationsJSON NVARCHAR(MAX), -- Chứa chuỗi JSON cho các ngôn ngữ khác
+    ListenCount INT DEFAULT 0       -- Đếm lượt nghe của riêng hiện vật này
 );
 GO
 
--- 3. TẠO BẢNG LỊCH SỬ VÉ & THỐNG KÊ DOANH THU (Gộp các cột mới)
+-- 3. TẠO BẢNG LỊCH SỬ VÉ & THỐNG KÊ DOANH THU (BẢNG TRỐNG)
 CREATE TABLE PassHistory (
-    PassID VARCHAR(20) PRIMARY KEY,          -- Mã PIN hệ thống cấp (VD: VIP-8899)
+    PassID VARCHAR(20) PRIMARY KEY,          -- Mã PIN hệ thống cấp
     PurchaseDate DATETIME DEFAULT GETDATE(), -- Ngày giờ mua
     Amount DECIMAL(18,2) DEFAULT 50000,      -- Giá vé
     DeviceLimit INT DEFAULT 1,               -- Giới hạn số thiết bị dùng chung
-    Status NVARCHAR(50) DEFAULT 'Active',    -- Trạng thái: Active / Expired
-    ActivationDate DATETIME,                 -- Thời điểm khách bắt đầu nhập mã vào App
-    
-    -- Các cột phục vụ Dashboard Thống kê
+    Status NVARCHAR(50) DEFAULT 'Active',    -- Trạng thái: Active / Expired / Revoked
+    ActivationDate DATETIME,                 -- Thời điểm khách bắt đầu nhập mã
     UserIP VARCHAR(50),                      -- Địa chỉ IP người mua
     PackageType NVARCHAR(100),               -- Tên gói (VD: Vé Khách Lẻ, Vé Đoàn)
-    ParticipantCount INT DEFAULT 1           -- Số lượng khách trong gói
+    ParticipantCount INT DEFAULT 1,          -- Số lượng khách trong gói
+    UsedDevices INT DEFAULT 0                -- Số thiết bị đang online thực tế
 );
 GO
 
--- 4. THÊM DỮ LIỆU MẪU BAN ĐẦU
-INSERT INTO Exhibits (ExhibitID, ZoneCode, ExhibitName, Transcript_VI)
-VALUES 
-('EX-101', 1, N'Xe tăng T-54B', N'Chiếc xe tăng lịch sử mang số hiệu 843...'),
-('EX-102', 1, N'Máy bay trực thăng UH-1', N'Trực thăng đa dụng Bell UH-1 Iroquois...'),
-('EX-201', 2, N'Máy chém thời Pháp thuộc', N'Hiện vật lịch sử minh chứng cho giai đoạn...');
-GO
-USE MuseumDB;
+-- 4. TẠO BẢNG THỐNG KÊ HỆ THỐNG
+CREATE TABLE SystemAnalytics (
+    ID INT PRIMARY KEY DEFAULT 1,
+    LiveGuestCount INT DEFAULT 0,  -- Khách vãng lai (Chưa nhập PIN)
+    TotalListens INT DEFAULT 0     -- Tổng lượt nghe toàn hệ thống
+);
 GO
 
-
-USE MuseumDB;
+-- 5. KHỞI TẠO DỮ LIỆU HỆ THỐNG (BẮT BUỘC)
+-- Phải có 1 dòng gốc này để Dashboard có chỗ cộng dồn số liệu Real-time
+INSERT INTO SystemAnalytics (ID, LiveGuestCount, TotalListens) 
+VALUES (1, 0, 0);
 GO
 
--- Thêm sẵn 2 mã PIN mẫu vào bảng PassHistory hiện có của bạn để test nút "Bỏ qua -> Nhập mã PIN"
-INSERT INTO PassHistory (PassID, Amount, DeviceLimit, Status, UserIP, PackageType, ParticipantCount)
-VALUES 
-('QUAY01', 50000, 1,  N'Active', '127.0.0.1', N'Vé Khách Lẻ (Mua tại quầy)', 1),
-('DOAN88', 750000, 30, N'Active', '127.0.0.1', N'Vé Đoàn Lữ Hành', 30);
-GO
-USE MuseumDB;
-GO
+-- ==========================================
+-- CÁC CÂU LỆNH TRUY VẤN THƯỜNG DÙNG (BÔI ĐEN ĐỂ CHẠY KHI CẦN)
+-- ==========================================
+/*
+-- Xem danh sách Hiện vật
+SELECT * FROM Exhibits;
 
-ALTER TABLE PassHistory ADD UsedDevices INT DEFAULT 0;
-GO
+-- Xem Lịch sử vé
+SELECT * FROM PassHistory;
 
--- Cập nhật những vé cũ đã kích hoạt thành 1 máy
-UPDATE PassHistory SET UsedDevices = 1 WHERE ActivationDate IS NOT NULL;
-GO
+-- Xem Khách vãng lai và Tổng lượt nghe
+SELECT * FROM SystemAnalytics;
+
+-- Kiểm tra số thiết bị Đang Online
+SELECT SUM(UsedDevices) AS TongNguoiDangOnline FROM PassHistory WHERE Status = 'Active';
+
+-- Reset toàn bộ thiết bị đang online về 0 (Dọn dẹp hệ thống khi kẹt số)
+UPDATE PassHistory SET UsedDevices = 0;
+*/
