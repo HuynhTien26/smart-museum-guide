@@ -1,0 +1,469 @@
+@import url('https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=Playfair+Display:wght@600;700&display=swap');
+
+:root {
+  --m-bg: #141413;
+  --m-surface: #1F1E1C;
+  --m-card: #262421;
+  --m-border: #35322F;
+  --m-gold: #D49B4B;
+  --m-gold-light: #E8B86D;
+  --m-cream: #F5F2EB;
+  --m-muted: #A8A298;
+  --m-emerald: #10B981;
+}
+
+* {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  margin: 0;
+  background-color: #0b0b0a;
+  color: var(--m-cream);
+  font-family: 'Be Vietnam Pro', sans-serif;
+}
+
+.mw-shell {
+  width: 100%;
+  max-width: 100%;
+  height: 100vh; /* Cố định chiều cao toàn màn hình */
+  margin: 0 auto;
+  background-color: var(--m-bg);
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden; /* Chống tràn nền */
+  /* border-left: 1px solid var(--m-border);
+  border-right: 1px solid var(--m-border); */
+}
+
+.mw-header {
+  padding: 14px 16px;
+  background: rgba(20, 20, 19, 0.96);
+  border-bottom: 1px solid var(--m-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 20;
+}
+
+.mw-badge-top {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--m-gold);
+  font-weight: 700;
+}
+
+.mw-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--m-cream);
+  margin: 2px 0 0 0;
+}
+
+.mw-pill-btn {
+  background: var(--m-surface);
+  border: 1px solid rgba(212, 155, 75, 0.45);
+  color: var(--m-cream);
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.mw-content {
+  flex: 1;
+  padding: 16px;
+  padding-bottom: 140px;
+}
+
+.mw-banner {
+  background: linear-gradient(135deg, rgba(212, 155, 75, 0.16), rgba(166, 68, 56, 0.14));
+  border: 1px solid rgba(212, 155, 75, 0.45);
+  border-radius: 16px;
+  padding: 12px 14px;
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.mw-zone-bar {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 8px;
+  margin-bottom: 14px;
+  scrollbar-width: none;
+}
+.mw-zone-bar::-webkit-scrollbar {
+  display: none;
+}
+
+.mw-zone-chip {
+  flex-shrink: 0;
+  padding: 7px 13px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  border: 1px solid var(--m-border);
+  background: var(--m-surface);
+  color: var(--m-muted);
+  cursor: pointer;
+}
+.mw-zone-chip.active {
+  background: var(--m-gold);
+  color: #141413;
+  border-color: var(--m-gold);
+  font-weight: 700;
+}
+
+.mw-card {
+  background: var(--m-surface);
+  border: 1px solid var(--m-border);
+  border-radius: 18px;
+  padding: 12px;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+}
+
+.mw-thumb {
+  width: 66px;
+  height: 66px;
+  border-radius: 14px;
+  background: #262421;
+  border: 1px solid var(--m-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.mw-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.mw-code-tag {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  background: rgba(20, 20, 19, 0.9);
+  border: 1px solid rgba(212, 155, 75, 0.5);
+  color: var(--m-gold);
+  font-size: 9px;
+  font-weight: 800;
+  padding: 1px 5px;
+  border-radius: 4px;
+}
+
+.mw-card-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.mw-zone-badge {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 700;
+  color: #FCA5A5;
+  background: rgba(220, 38, 38, 0.2);
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  padding: 1px 6px;
+  border-radius: 5px;
+  margin-right: 6px;
+}
+
+.mw-card-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--m-cream);
+  margin: 4px 0 2px 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mw-card-desc {
+  font-size: 11.5px;
+  color: var(--m-muted);
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mw-icon-btn {
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  background: var(--m-card);
+  border: 1px solid rgba(212, 155, 75, 0.4);
+  color: var(--m-gold);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.mw-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(5px);
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.mw-modal {
+  width: 100%;
+  max-width: 380px;
+  background: var(--m-surface);
+  border: 1px solid rgba(212, 155, 75, 0.45);
+  border-radius: 24px;
+  padding: 22px;
+  text-align: center;
+}
+
+.mw-qr-frame {
+  background: #FFFFFF;
+  padding: 12px;
+  border-radius: 16px;
+  width: 200px;
+  height: 200px;
+  margin: 14px auto;
+}
+
+.mw-btn {
+  width: 100%;
+  padding: 13px 16px;
+  border-radius: 14px;
+  font-size: 13.5px;
+  font-weight: 700;
+  cursor: pointer;
+  border: none;
+  margin-top: 10px;
+}
+.mw-btn-gold {
+  background: linear-gradient(90deg, var(--m-gold), var(--m-gold-light));
+  color: #141413;
+}
+.mw-btn-emerald {
+  background: var(--m-emerald);
+  color: #FFFFFF;
+}
+.mw-btn-outline {
+  background: transparent;
+  border: 1px solid var(--m-border);
+  color: var(--m-cream);
+}
+.mw-btn-ghost {
+  background: transparent;
+  color: var(--m-muted);
+}
+
+.mw-pin-input {
+  width: 100%;
+  padding: 14px;
+  border-radius: 14px;
+  background: var(--m-bg);
+  border: 2px solid var(--m-gold);
+  color: var(--m-cream);
+  font-size: 22px;
+  font-family: monospace;
+  font-weight: 800;
+  text-align: center;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  margin: 14px 0;
+}
+
+/* Màn hình chạy chữ đồng bộ từng câu (Spotify Lyrics) */
+.mw-lyrics-modal {
+  position: absolute; /* Găm gọn bên trong khung mw-shell */
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(180deg, #1E2436 0%, #141824 55%, #0E1017 100%);
+  z-index: 95;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.mw-lyrics-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 36px 22px;
+  text-align: center;
+}
+
+.mw-lyric-sentence {
+  padding: 10px 12px;
+  margin-bottom: 16px;
+  border-radius: 14px;
+  cursor: pointer;
+  transition: all 0.28s ease;
+}
+.mw-lyric-sentence.active {
+  color: #FFFFFF;
+  font-weight: 700;
+  font-size: 17.5px;
+  background: rgba(255, 255, 255, 0.08);
+  transform: scale(1.03);
+}
+.mw-lyric-sentence.inactive {
+  color: #94A3B8;
+  opacity: 0.35;
+  font-size: 15.5px;
+}
+
+.mw-bottom-nav {
+  position: absolute; /* Đổi thành absolute theo khung mw-shell */
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 62px;
+  background: #181715;
+  border-top: 1px solid var(--m-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  z-index: 30;
+}
+
+.mw-nav-btn {
+  background: none;
+  border: none;
+  color: var(--m-muted);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+}
+.mw-nav-btn.active {
+  color: var(--m-gold);
+}
+
+/* ============================================================================
+ * CÁC HIỆU ỨNG (ANIMATIONS) DÀNH CHO GIAO DIỆN MOBILE TÍCH HỢP TAILWIND
+ * ============================================================================ */
+
+/* 1. Ẩn thanh cuộn nhưng vẫn cho phép cuộn */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* 2. Hiệu ứng xung nhịp cho nút Quét QR */
+@keyframes radarPulse {
+  0% {
+      transform: scale(0.97);
+      box-shadow: 0 0 0 0 rgba(212, 155, 75, 0.55);
+  }
+  70% {
+      transform: scale(1);
+      box-shadow: 0 0 0 12px rgba(212, 155, 75, 0);
+  }
+  100% {
+      transform: scale(0.97);
+      box-shadow: 0 0 0 0 rgba(212, 155, 75, 0);
+  }
+}
+.qr-pulse {
+  animation: radarPulse 2.4s infinite;
+}
+
+/* 3. Sóng âm thanh nhấp nhô cho Mini Player */
+@keyframes soundWave {
+  0%, 100% { height: 4px; }
+  50% { height: 15px; }
+}
+.wave-bar {
+  width: 3px;
+  background-color: #D49B4B;
+  border-radius: 999px;
+  transition: height 0.2s ease;
+}
+.playing .wave-bar:nth-child(1) { animation: soundWave 0.7s infinite ease-in-out 0.1s; }
+.playing .wave-bar:nth-child(2) { animation: soundWave 0.9s infinite ease-in-out 0.3s; }
+.playing .wave-bar:nth-child(3) { animation: soundWave 0.6s infinite ease-in-out 0.2s; }
+.playing .wave-bar:nth-child(4) { animation: soundWave 0.8s infinite ease-in-out 0.4s; }
+.playing .wave-bar:nth-child(5) { animation: soundWave 0.75s infinite ease-in-out 0.15s; }
+
+/* 4. Trình phát Lyrics (Làm mờ dần trên và dưới) */
+.lyrics-mask {
+  mask-image: linear-gradient(to bottom, transparent 0%, black 15%, black 85%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 15%, black 85%, transparent 100%);
+}
+
+.lyric-line {
+  transition: all 0.38s cubic-bezier(0.16, 1, 0.3, 1);
+  transform-origin: center center;
+}
+.lyric-line.active-line {
+  color: #FFFFFF;
+  font-weight: 700;
+  opacity: 1;
+  transform: scale(1.04);
+  text-shadow: 0 4px 24px rgba(255, 255, 255, 0.28);
+}
+.lyric-line.past-line {
+  color: #CBD5E1;
+  opacity: 0.32;
+  font-weight: 500;
+  transform: scale(0.96);
+}
+.lyric-line.future-line {
+  color: #94A3B8;
+  opacity: 0.28;
+  font-weight: 500;
+  transform: scale(0.96);
+}
+
+/* Nền Card Nổi bật */
+.hero-card-bg {
+  background: linear-gradient(135deg, #28241E 0%, #1B1A18 60%, #241C18 100%);
+}
+/* Màu nền cho trình phát nhạc đồng bộ chữ (Không dùng position: relative để tránh đè class fixed) */
+.lyrics-stage {
+  background: linear-gradient(180deg, #1E2436 0%, #141824 55%, #0E1017 100%);
+}
+
+/* Hiệu ứng tia laser cho khung Quét QR */
+@keyframes scanLaser {
+  0% { top: 8%; opacity: 0.4; }
+  50% { top: 88%; opacity: 1; }
+  100% { top: 8%; opacity: 0.4; }
+}
+
+.laser-line {
+  position: absolute;
+  left: 6%;
+  right: 6%;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #D49B4B, #FFF3D1, #D49B4B, transparent);
+  box-shadow: 0 0 12px 3px rgba(212, 155, 75, 0.8);
+  animation: scanLaser 2.6s ease-in-out infinite;
+}

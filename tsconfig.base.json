@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["DOM", "DOM.Iterable", "ESNext"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "baseUrl": ".",
+    "paths": {
+      "@museum/shared-types": ["packages/shared-types/src/index.ts"],
+      "@museum/shared-utils": ["packages/shared-utils/src/index.ts"],
+      "@museum/design-tokens": ["packages/design-tokens/src/index.ts"]
+    }
+  },
+  "exclude": ["node_modules", "dist", "build"]
+}
