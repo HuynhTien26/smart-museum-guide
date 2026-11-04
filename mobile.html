@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="vi" class="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>Bảo tàng Chứng tích Chiến tranh - Mobile Web</title>
+    
+    <!-- 1. Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- 2. Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&family=Playfair+Display:ital,wght@0,600;0,700;1,600&display=swap" rel="stylesheet">
+    
+    <!-- 3. Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <!-- 4. Cấu hình Theme -->
+    <script>
+      tailwind.config = {
+        darkMode: 'class',
+        theme: {
+          extend: {
+            colors: {
+              museum: {
+                bg: '#141413',
+                surface: '#1F1E1C',
+                card: '#262421',
+                border: '#35322F',
+                gold: '#D49B4B',
+                goldLight: '#E8B86D',
+                goldDark: '#9E6E28',
+                crimson: '#A64438',
+                cream: '#F5F2EB',
+                muted: '#A8A298',
+                dim: '#706B63',
+              }
+            },
+            fontFamily: {
+              sans: ['"Be Vietnam Pro"', 'sans-serif'],
+              serif: ['"Playfair Display"', 'serif']
+            }
+          }
+        }
+      }
+    </script>
+  </head>
+  <!-- XÓA overflow-hidden ở body để cho phép cuộn tự nhiên -->
+  <body class="bg-museum-bg text-museum-cream font-sans min-h-screen m-0">
+    <!-- XÓA các class tạo viền điện thoại, chỉ giữ w-full và min-h-screen -->
+    <div id="root" class="relative w-full min-h-screen flex flex-col bg-museum-bg">
+    </div>
+    
+    <script type="module" src="/apps/mobile-app/src/main.tsx"></script>
+  </body>
+</html>
