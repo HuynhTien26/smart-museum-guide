@@ -302,7 +302,13 @@ app.get('/api/analytics/summary', async (_req: Request, res: Response) => {
     const sysResult = await pool.request().query(`SELECT LiveGuestCount, TotalListens FROM SystemAnalytics WHERE ID = 1`);
     const sysData = sysResult.recordset[0] || { LiveGuestCount: 0, TotalListens: 0 };
 
-    const onlineResult = await pool.request().query(`SELECT ISNULL(SUM(UsedDevices), 0) AS TotalOnline FROM PassHistory WHERE Status = 'Active'`);
+    // SỬA LỖI Ở ĐÂY: Thêm điều kiện kiểm tra ActivationDate để chỉ đếm vé chưa hết hạn (trong vòng 24h)
+    const onlineResult = await pool.request().query(`
+      SELECT ISNULL(SUM(UsedDevices), 0) AS TotalOnline 
+      FROM PassHistory 
+      WHERE Status = 'Active' 
+      AND (ActivationDate IS NULL OR DATEDIFF(HOUR, ActivationDate, GETDATE()) <= 24)
+    `);
     const totalOnline = onlineResult.recordset[0].TotalOnline;
 
     res.json({
