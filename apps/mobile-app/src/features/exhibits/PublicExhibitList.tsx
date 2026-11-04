@@ -1096,7 +1096,7 @@ export const PublicExhibitList: React.FC<Props> = ({
     handleSelectExhibit(virtualZoneExhibit);
   };
 
-  const handleConfirmPaidOnline = async () => {
+  const handleConfirmPaidOnline = async () => { // [UC-14] Bước 8: Khách vãng lai: Mua vé online và nhận mã PIN
     setIsProcessing(true);
     const randomPin = Array.from({ length: 6 }, () =>
       'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'.charAt(Math.floor(Math.random() * 32))
@@ -1162,7 +1162,7 @@ export const PublicExhibitList: React.FC<Props> = ({
 
   const currentMapZoneObj = OFFICIAL_ZONES.find((z) => z.pin === selectedMapPin) || OFFICIAL_ZONES[12];
 
-  const allZoneNumbers = Array.from(
+  const allZoneNumbers = Array.from( 
     new Set([...exhibits.map((e) => Number(e.ZoneCode)), 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13])
   )
     .filter((n) => !isNaN(n) && n > 0)

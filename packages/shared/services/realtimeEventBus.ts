@@ -1,7 +1,6 @@
 // packages/shared/services/realtimeEventBus.ts
 
-type EventType = 'PASS_ACTIVATED' | 'PLAY_EXHIBIT' | 'REPLAY_EXHIBIT' | 'CLIENT_CONNECTED' | 'CLIENT_DISCONNECTED';
-
+type EventType = 'PASS_ACTIVATED' | 'PLAY_EXHIBIT' | 'PASS_REVOKED' | 'UPDATE_CONNECTIONS';
 type EventCallback = (payload: any) => void;
 
 class RealtimeEventBus {

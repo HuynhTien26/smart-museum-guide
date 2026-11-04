@@ -157,13 +157,14 @@ export const ExhibitManagerView: React.FC = () => {
 
       if (response.ok) {
         alert(isEditing ? 'Cập nhật thành công!' : 'Thêm dữ liệu thành công!');
-        // [UC-13] Khởi tạo mã QR Code ứng với đường link của ID vừa tạo
+        
+        // 1. Tạo QR Code cho hiện vật vừa Sửa/Thêm
         setSavedQR(`${window.location.origin}/?exhibit=${code}`);
+        
+        // 2. Load lại danh sách bảng bên dưới
         fetchExhibits();
         
-        if (isEditing) {
-            handleResetForm();
-        }
+        // (Đã xóa lệnh handleResetForm() ở đây để giữ lại mã QR và dữ liệu trên form)
       } else {
         alert('Lưu thất bại!');
       }
