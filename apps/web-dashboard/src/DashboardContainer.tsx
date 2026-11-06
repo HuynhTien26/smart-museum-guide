@@ -19,7 +19,7 @@ export const DashboardContainer: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'EXHIBITS' | 'PASSES' | 'SQL_HISTORY' | 'ANALYTICS'>('PASSES');
 
   // Khai báo state tổng kết nối ở TRONG Component
-  const [totalConnections, setTotalConnections] = useState<number>(0);
+  const [, setTotalConnections] = useState<number>(0);
 
   // Khởi tạo passHistory rỗng, sẽ được fetch từ SQL
   const [passHistory, setPassHistory] = useState<ActivationPassRecord[]>([]);
@@ -57,8 +57,8 @@ export const DashboardContainer: React.FC = () => {
     };
 
     fetchPasses();
-    // const interval = setInterval(fetchPasses, 3000); // Tự động đồng bộ SQL mỗi 3 giây
-   //  return () => clearInterval(interval);
+    const interval = setInterval(fetchPasses, 3000); // Tự động đồng bộ SQL mỗi 3 giây
+    return () => clearInterval(interval);
   }, []);
 
   const [listenedCount, setListenedCount] = useState<number>(() => {
@@ -69,9 +69,6 @@ export const DashboardContainer: React.FC = () => {
   // [UC-08] Tính toán số lượng thiết bị đang kết nối dựa trên mã kích hoạt (Active)
   // Lấy tổng số thiết bị đang kết nối từ passHistory 
   // Đang Online (Đã nhập PIN)
-  const activeUsers = passHistory
-    .filter((pass) => pass.status === 'ACTIVE')
-    .reduce((sum, pass) => sum + (pass.usedDevices || 0), 0);
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY_LISTEN, listenedCount.toString());

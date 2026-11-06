@@ -2,12 +2,15 @@
 import sql from 'mssql';
 
 const dbConfig: sql.config = {
-  user: 'sa',
-  password: 'Museum@Admin2026!',
-  server: '127.0.0.1',
+  user: process.env.DB_USER || 'sa',
+  password: process.env.DB_PASSWORD || 'Museum@Admin2026!',
+  server: process.env.DB_SERVER || '127.0.0.1',
   port: 1433,
-  database: 'MuseumDB',
-  options: { encrypt: false, trustServerCertificate: true },
+  database: process.env.DB_NAME || 'MuseumDB',
+  options: {
+    encrypt: false,
+    trustServerCertificate: true,
+  },
 };
 
 export const passDao = {
@@ -136,5 +139,14 @@ export const passDao = {
         WHERE PassID = @PassID
       `);
     return true;
-  }
+  },
+  // 6. Thu hồi / Khóa mã PIN vĩnh viễn từ Dashboard
+  revokePass: async (passId: string) => {
+  const cleanId = passId.trim().toUpperCase();
+  const pool = await sql.connect(dbConfig);
+  await pool.request()
+    .input('PassID', sql.VarChar, cleanId)
+    .query(`UPDATE PassHistory SET Status = 'REVOKED', UsedDevices = 0 WHERE PassID = @PassID`);
+  return true;
+}
 };

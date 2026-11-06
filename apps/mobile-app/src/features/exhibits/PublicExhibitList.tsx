@@ -6,6 +6,7 @@
 // [UC-02] Thư viện jsQR dùng để giải mã QR Code từ Camera
 import jsQR from 'jsqr';
 import React, { useEffect, useState, useRef } from 'react';
+// @ts-ignore
 import '../../styles/mobileStyles.css';
 
 export interface DbExhibit {
@@ -779,12 +780,13 @@ export const PublicExhibitList: React.FC<Props> = ({
     if (currentLang === 'vi') return { title, content, audio };
 
     // Bóc tách JSON nếu Dashboard lưu dạng Mảng Array
-    if (ex.TranslationsJSON) {
+   if (ex.TranslationsJSON) {
       try {
         const parsed = JSON.parse(ex.TranslationsJSON);
         if (Array.isArray(parsed)) {
           const t = parsed.find((item: any) => item.langCode === currentLang);
           if (t) {
+            title = t.title || t.name || title; // <-- THÊM DÒNG NÀY ĐỂ ĐỔI TÊN HIỆN VẬT ĐA NGÔN NGỮ
             content = t.content || '';
             audio = t.audioBase64 || '';
           }
@@ -901,7 +903,7 @@ export const PublicExhibitList: React.FC<Props> = ({
 
   // Logic Cuộn mượt (Auto scroll)
   const isUserScrolling = useRef<boolean>(false);
-  const scrollTimeout = useRef<NodeJS.Timeout | null>(null);
+  const scrollTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (!showLyricsModal) return;
@@ -1957,30 +1959,30 @@ export const PublicExhibitList: React.FC<Props> = ({
         </button>
       </nav>
 
-      {/* 5. GIAO DIỆN THUYẾT MINH LYRICS */}
+      {/* 5. GIAO DIỆN THUYẾT MINH LYRICS (ĐÃ CĂN CHỈNH CHUẨN BỐ CỤC) */}
       {/* [UC-04] Giao diện Lyrics hiển thị chữ đồng bộ */}
       {showLyricsModal && selectedExhibit && (
         <div className="fixed inset-0 max-w-[430px] mx-auto z-50 flex flex-col lyrics-stage text-white overflow-hidden">
-          <div className="px-4 pt-4 pb-3 flex items-center justify-between border-b border-white/10 shrink-0">
-            <div className="flex items-center gap-2.5 min-w-0">
-              <span className="px-2.5 py-1 rounded-lg bg-museum-gold text-[#141413] font-extrabold text-xs shrink-0">
-                #{selectedExhibit.ExhibitID}
-              </span>
-              <div className="min-w-0">
-                <h2 className="font-serif text-sm font-bold text-white truncate">
-                  {currentTrans.title}
-                </h2>
-                <p className="text-[10px] text-slate-300 truncate">
+          {/* HEADER: Đưa mã #KHU xuống dòng phụ để tiêu đề chính rộng rãi hơn */}
+          <div className="px-4 pt-4 pb-3 flex items-center justify-between gap-3 border-b border-white/10 shrink-0">
+            <div className="min-w-0 flex-1">
+              <h2 className="font-serif text-[15px] font-bold text-white truncate">
+                {currentTrans.title}
+              </h2>
+              <div className="flex items-center gap-1.5 mt-0.5 text-[10.5px] text-slate-300 truncate">
+                <span className="px-1.5 py-0.5 rounded bg-museum-gold text-[#141413] font-extrabold text-[9.5px] shrink-0">
+                  #{selectedExhibit.ExhibitID}
+                </span>
+                <span className="truncate">
                   {t.zonePrefix} {selectedExhibit.ZoneCode} • {t.museumTitle}
-                </p>
+                </span>
               </div>
             </div>
 
             <div className="flex items-center gap-1.5 shrink-0">
-              {/* Nút gọi Modal Chọn Ngôn ngữ từ màn hình phát */}
               <button
                 onClick={() => setModalStep('LANGUAGE')}
-                className="px-2.5 py-1 rounded-full bg-white/10 hover:bg-white/15 border border-white/15 text-[11px] text-white flex items-center gap-1"
+                className="px-2.5 py-1.5 rounded-full bg-white/10 hover:bg-white/15 border border-white/15 text-[11px] text-white flex items-center gap-1"
               >
                 <span>{t.flag}</span>
                 <span className="font-semibold">{t.code}</span>
@@ -1994,19 +1996,21 @@ export const PublicExhibitList: React.FC<Props> = ({
             </div>
           </div>
 
+          {/* SUB-BAR */}
           <div className="px-4 py-1.5 bg-black/25 flex items-center justify-between text-[10.5px] text-slate-300 border-b border-white/5 shrink-0">
-            <span className="flex items-center gap-1.5">
-              <i className="fa-solid fa-wand-magic-sparkles text-museum-gold"></i>
-              <span>{t.lyricsSubBar}</span>
+            <span className="flex items-center gap-1.5 truncate">
+              <i className="fa-solid fa-wand-magic-sparkles text-museum-gold shrink-0"></i>
+              <span className="truncate">{t.lyricsSubBar}</span>
             </span>
             {showReplayBadge && (
-              <span className="px-2 py-0.5 rounded bg-amber-500/20 border border-amber-400/40 text-amber-300 font-bold text-[9.5px]">
+              <span className="px-2 py-0.5 rounded bg-amber-500/20 border border-amber-400/40 text-amber-300 font-bold text-[9.5px] shrink-0">
                 {t.replayBadge}
               </span>
             )}
           </div>
 
-          <div className="flex-1 overflow-y-auto no-scrollbar px-6 py-16 space-y-6 text-center lyrics-mask">
+          {/* VÙNG CHỮ CHẠY: Tăng py-24 để câu đầu không bị mờ & thêm [text-wrap:balance] chống rớt chữ lẻ */}
+          <div className="flex-1 overflow-y-auto no-scrollbar px-5 py-24 space-y-6 text-center lyrics-mask">
             {sentences.map((lineObj, idx) => {
               let stateClass = 'future-line';
               if (idx === activeLineIdx) stateClass = 'active-line';
@@ -2016,12 +2020,16 @@ export const PublicExhibitList: React.FC<Props> = ({
                 <div
                   key={idx}
                   id={`lyric-line-${idx}`}
-                  // [UC-05] Sự kiện onClick cho phép chạm vào câu chữ để nghe lại (tua tới) đoạn tương ứng 
                   onClick={() => handleJumpToLine(idx)}
-                  className={`lyric-line ${stateClass} cursor-pointer py-2 px-3 rounded-2xl hover:bg-white/5 select-none`}
+                  className={`lyric-line ${stateClass} cursor-pointer py-2.5 px-3 rounded-2xl hover:bg-white/5 select-none transition-all duration-300`}
                 >
-                  <p className="text-[17px] leading-relaxed tracking-wide">{lineObj.text}</p>
-                  <span className="inline-block text-[10px] font-mono text-museum-gold/80 mt-1">
+                  <p
+                    className="text-[17px] leading-relaxed tracking-wide mx-auto max-w-[34ch]"
+                    style={{ textWrap: 'balance' } as React.CSSProperties}
+                  >
+                    {lineObj.text}
+                  </p>
+                  <span className="inline-block text-[10px] font-mono text-museum-gold/80 mt-1.5">
                     {lineObj.time}
                   </span>
                 </div>
@@ -2029,6 +2037,7 @@ export const PublicExhibitList: React.FC<Props> = ({
             })}
           </div>
 
+          {/* BẢNG ĐIỀU KHIỂN DƯỚI CÙNG: Dùng Grid 3 cột để cụm nút Play luôn nằm chính giữa tâm */}
           <div className="p-4 bg-black/45 backdrop-blur-xl border-t border-white/10 space-y-3 shrink-0">
             <div className="space-y-1">
               <input
@@ -2046,52 +2055,57 @@ export const PublicExhibitList: React.FC<Props> = ({
               </div>
             </div>
 
-            <div className="flex items-center justify-between px-2">
-              <button
-                onClick={() => handleJumpToLine(0)}
-                className="px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-xs font-semibold text-amber-300 flex items-center gap-1.5 active:scale-95 transition"
-              >
-                <i className="fa-solid fa-rotate-left"></i>
-                <span>{t.btnRestart}</span>
-              </button>
+            <div className="grid grid-cols-3 items-center px-1">
+              {/* Cột 1 (Trái): Nút Nghe lại từ đầu */}
+              <div className="flex justify-start">
+                <button
+                  onClick={() => handleJumpToLine(0)}
+                  className="px-2.5 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-[11px] font-semibold text-amber-300 flex items-center gap-1.5 active:scale-95 transition whitespace-nowrap"
+                >
+                  <i className="fa-solid fa-rotate-left"></i>
+                  <span>{t.btnRestart}</span>
+                </button>
+              </div>
 
-              <div className="flex items-center gap-4">
+              {/* Cột 2 (Giữa): Cụm nút Prev / Play / Next luôn căn đúng trục tâm màn hình */}
+              <div className="flex items-center justify-center gap-3.5">
                 <button
                   onClick={() =>
                     handleJumpToLine((activeLineIdx - 1 + sentences.length) % sentences.length)
                   }
-                  className="w-9 h-9 rounded-full bg-white/10 text-white flex items-center justify-center active:scale-90"
+                  className="w-9 h-9 rounded-full bg-white/10 text-white flex items-center justify-center active:scale-90 shrink-0"
                 >
                   <i className="fa-solid fa-backward-step text-xs"></i>
                 </button>
                 <button
                   onClick={handleTogglePlayPause}
-                  className="w-12 h-12 rounded-full bg-white text-[#0E1017] flex items-center justify-center shadow-lg active:scale-95 transition"
+                  className="w-12 h-12 rounded-full bg-white text-[#0E1017] flex items-center justify-center shadow-lg active:scale-95 transition shrink-0"
                 >
                   <i className={`fa-solid ${isPlaying ? 'fa-pause' : 'fa-play'} text-base`}></i>
                 </button>
                 <button
                   onClick={() => handleJumpToLine((activeLineIdx + 1) % sentences.length)}
-                  className="w-9 h-9 rounded-full bg-white/10 text-white flex items-center justify-center active:scale-90"
+                  className="w-9 h-9 rounded-full bg-white/10 text-white flex items-center justify-center active:scale-90 shrink-0"
                 >
                   <i className="fa-solid fa-forward-step text-xs"></i>
                 </button>
               </div>
 
-              <button
-                onClick={() => {
-                  if (sentences[activeLineIdx]) speakSentence(sentences[activeLineIdx].text);
-                }}
-                className="px-3 py-1.5 rounded-xl bg-museum-gold/20 border border-museum-gold/40 text-xs font-semibold text-museum-gold flex items-center gap-1.5 active:scale-95"
-              >
-                <i className="fa-solid fa-volume-high"></i>
-                <span>{t.btnSpeakLine}</span>
-              </button>
+              {/* Cột 3 (Phải): Nút đổi nhanh tốc độ đọc (0.8x / 1x / 1.2x) giúp cân đối 2 bên */}
+              <div className="flex justify-end">
+                <button
+                  onClick={() =>
+                    setPlaybackSpeed((prev) => (prev === 1.0 ? 1.2 : prev === 1.2 ? 0.8 : 1.0))
+                  }
+                  className="px-2.5 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-[11px] font-bold text-museum-gold border border-museum-gold/30 active:scale-95 transition"
+                >
+                  {playbackSpeed}x
+                </button>
+              </div>
             </div>
           </div>
         </div>
       )}
-
       {/* 6. MODALS */}
       {/* [UC-02] Giao diện Màn hình quét Camera */}
       {modalStep === 'SCANNER' && (

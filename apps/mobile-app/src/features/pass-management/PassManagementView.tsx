@@ -7,7 +7,8 @@
  */
 
 import React, { useState } from 'react';
-import '../../../../../packages/shared/styles/mobileStyles.css';
+// @ts-ignore
+import '../../styles/mobileStyles.css';
 
 interface Props {
   initialPin?: string;

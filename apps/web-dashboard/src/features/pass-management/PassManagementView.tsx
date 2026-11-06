@@ -20,6 +20,7 @@ export const PassManagementView: React.FC<PassManagementProps> = ({
   setPassHistory,
   onRevokePass,
 }) => {
+  
   const [selectedCategory, setSelectedCategory] = useState<PassCategory>('SINGLE_VISITOR');
   const [groupSize, setGroupSize] = useState<number>(15);
 
@@ -70,6 +71,7 @@ export const PassManagementView: React.FC<PassManagementProps> = ({
           1. Cấp Mã Kích Hoạt Thuyết Minh Tự Động (QR Pass & PIN 6 Ký Tự)
         </h2>
         <div className="museum-form-grid">
+        
           <div className="museum-form-group">
             <label className="museum-label">Loại mã cần cấp</label>
             <select

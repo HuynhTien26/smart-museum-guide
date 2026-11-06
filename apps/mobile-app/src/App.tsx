@@ -1,7 +1,8 @@
 /**
  * apps/mobile-app/src/App.tsx
  */
-import React, { useState, useEffect } from 'react';
+
+import { useState, useEffect } from 'react';
 import { PublicExhibitList } from './features/exhibits/PublicExhibitList';
 import { realtimeBus } from '../../../packages/shared/services/realtimeEventBus';
 // BƯỚC 1: Import realtimeSyncService

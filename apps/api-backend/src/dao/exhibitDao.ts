@@ -1,13 +1,13 @@
 import sql from 'mssql';
 
 const dbConfig: sql.config = {
-  user: 'sa',
-  password: 'Museum@Admin2026!',
-  server: '127.0.0.1', // Dùng IP Loopback thay vì 'localhost' để tránh lỗi phân giải IPv6
+  user: process.env.DB_USER || 'sa',
+  password: process.env.DB_PASSWORD || 'Museum@Admin2026!',
+  server: process.env.DB_SERVER || '127.0.0.1',
   port: 1433,
-  database: 'MuseumDB',
+  database: process.env.DB_NAME || 'MuseumDB',
   options: {
-    encrypt: false, // Tắt encrypt khi chạy môi trường dev cục bộ
+    encrypt: false,
     trustServerCertificate: true,
   },
 };

@@ -2,6 +2,7 @@
  * apps/web-dashboard/src/features/exhibits/ExhibitManagerView.tsx
  */
 import React, { useState, useEffect, useRef } from 'react';
+// @ts-ignore
 import '../../../../../packages/shared/styles/commonStyles.css';
 import { MUSEUM_ZONES_DATA } from '../../../../../packages/shared/data/zonesData';
 import { Exhibit } from '../../../../../packages/shared/models/exhibitModel';
@@ -14,6 +15,14 @@ const AVAILABLE_LANGUAGES = [
   { code: 'ko', name: 'Tiếng Hàn' },
   { code: 'zh', name: 'Tiếng Trung' }
 ];
+
+interface TranslationItem {
+  langCode: string;
+  langName: string;
+  title: string;
+  content: string;
+  audioBase64: string;
+}
 
 export const ExhibitManagerView: React.FC = () => {
   const [exhibits, setExhibits] = useState<Exhibit[]>([]);
@@ -28,9 +37,9 @@ export const ExhibitManagerView: React.FC = () => {
   // [UC-13] State lưu chuỗi URL để khởi tạo mã QR
   const [savedQR, setSavedQR] = useState<string | null>(null);
 
-  // State Đa ngôn ngữ (Mặc định có Tiếng Việt) [UC-12]
-  const [translations, setTranslations] = useState([
-    { langCode: 'vi', langName: 'Tiếng Việt', content: '', audioBase64: '' }
+  // State Đa ngôn ngữ (Mặc định có Tiếng Việt kèm trường title lưu Tên hiện vật) [UC-12]
+  const [translations, setTranslations] = useState<TranslationItem[]>([
+    { langCode: 'vi', langName: 'Tiếng Việt', title: '', content: '', audioBase64: '' }
   ]);
 
   const imageInputRef = useRef<HTMLInputElement>(null);
@@ -86,13 +95,16 @@ export const ExhibitManagerView: React.FC = () => {
     if (imageInputRef.current) imageInputRef.current.value = '';
   };
 
-  // [UC-12] Quản lý form Đa ngôn ngữ (Thêm/Xóa/Sửa content)
+  // [UC-12] Quản lý form Đa ngôn ngữ (Thêm/Xóa/Sửa title & content)
   const handleAddLanguage = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const selectedCode = e.target.value;
     if (!selectedCode) return;
     const langInfo = AVAILABLE_LANGUAGES.find(l => l.code === selectedCode);
     if (langInfo && !translations.find(t => t.langCode === selectedCode)) {
-      setTranslations([...translations, { langCode: langInfo.code, langName: langInfo.name, content: '', audioBase64: '' }]);
+      setTranslations([
+        ...translations,
+        { langCode: langInfo.code, langName: langInfo.name, title: '', content: '', audioBase64: '' }
+      ]);
     }
     e.target.value = ""; 
   };
@@ -100,6 +112,10 @@ export const ExhibitManagerView: React.FC = () => {
   const handleRemoveLanguage = (langCode: string) => {
     if (langCode === 'vi') return;
     setTranslations(translations.filter(t => t.langCode !== langCode));
+  };
+
+  const updateTranslationTitle = (langCode: string, title: string) => {
+    setTranslations(translations.map(t => t.langCode === langCode ? { ...t, title } : t));
   };
 
   const updateTranslationContent = (langCode: string, content: string) => {
@@ -135,15 +151,16 @@ export const ExhibitManagerView: React.FC = () => {
     const viTrans = translations.find(t => t.langCode === 'vi');
     const otherTrans = translations.filter(t => t.langCode !== 'vi');
 
-    // TỰ ĐỘNG TẠO TÊN ĐỂ LƯU VÀO DATABASE (Vì SQL bắt buộc có ExhibitName)
+    // Nếu là Âm thanh Khu vực thì tự động lấy tên Khu vực có sẵn; nếu là Hiện vật lẻ thì lấy tên người dùng nhập
     const autoName = isZoneAudio 
       ? `Âm thanh ${MUSEUM_ZONES_DATA.find(z => z.zoneNumber === zoneCode)?.nameVi || 'Khu ' + zoneCode}`
       : `Hiện vật ${code}`;
+    const finalExhibitName = (!isZoneAudio && viTrans?.title?.trim()) ? viTrans.title.trim() : autoName;
 
     const payload = {
       ExhibitID: code,
       ZoneCode: zoneCode,
-      ExhibitName: autoName,
+      ExhibitName: finalExhibitName,
       ImageBase64: imageBase64,
       Transcript_VI: viTrans?.content || '',
       AudioBase64_VI: viTrans?.audioBase64 || '',
@@ -157,14 +174,8 @@ export const ExhibitManagerView: React.FC = () => {
 
       if (response.ok) {
         alert(isEditing ? 'Cập nhật thành công!' : 'Thêm dữ liệu thành công!');
-        
-        // 1. Tạo QR Code cho hiện vật vừa Sửa/Thêm
         setSavedQR(`${window.location.origin}/?exhibit=${code}`);
-        
-        // 2. Load lại danh sách bảng bên dưới
         fetchExhibits();
-        
-        // (Đã xóa lệnh handleResetForm() ở đây để giữ lại mã QR và dữ liệu trên form)
       } else {
         alert('Lưu thất bại!');
       }
@@ -198,7 +209,7 @@ export const ExhibitManagerView: React.FC = () => {
     setCode(isZoneAudio ? `KHU-${zoneCode}` : ''); 
     setZoneCode(1); 
     clearImage();
-    setTranslations([{ langCode: 'vi', langName: 'Tiếng Việt', content: '', audioBase64: '' }]);
+    setTranslations([{ langCode: 'vi', langName: 'Tiếng Việt', title: '', content: '', audioBase64: '' }]);
     setSavedQR(null);
 
     const fileInputs = document.querySelectorAll<HTMLInputElement>('input[type="file"]');
@@ -219,20 +230,33 @@ export const ExhibitManagerView: React.FC = () => {
     
     const parsedOthers = ex.TranslationsJSON ? JSON.parse(ex.TranslationsJSON) : [];
     
-    let formattedOthers = [];
+    let formattedOthers: TranslationItem[] = [];
     if (Array.isArray(parsedOthers)) {
-        formattedOthers = parsedOthers;
+      formattedOthers = parsedOthers.map((item: any) => ({
+        langCode: item.langCode,
+        langName: item.langName || AVAILABLE_LANGUAGES.find(l => l.code === item.langCode)?.name || item.langCode,
+        title: item.title || item.name || '',
+        content: item.content || '',
+        audioBase64: item.audioBase64 || ''
+      }));
     } else {
-        formattedOthers = Object.keys(parsedOthers).map(k => ({
-            langCode: k,
-            langName: AVAILABLE_LANGUAGES.find(l => l.code === k)?.name || k,
-            content: parsedOthers[k].transcript || '',
-            audioBase64: parsedOthers[k].audioBase64 || ''
-        }));
+      formattedOthers = Object.keys(parsedOthers).map(k => ({
+        langCode: k,
+        langName: AVAILABLE_LANGUAGES.find(l => l.code === k)?.name || k,
+        title: parsedOthers[k].title || parsedOthers[k].name || '',
+        content: parsedOthers[k].transcript || parsedOthers[k].content || '',
+        audioBase64: parsedOthers[k].audioBase64 || ''
+      }));
     }
 
     setTranslations([
-      { langCode: 'vi', langName: 'Tiếng Việt', content: ex.Transcript_VI || '', audioBase64: ex.AudioBase64_VI || '' },
+      {
+        langCode: 'vi',
+        langName: 'Tiếng Việt',
+        title: ex.ExhibitName || '',
+        content: ex.Transcript_VI || '',
+        audioBase64: ex.AudioBase64_VI || ''
+      },
       ...formattedOthers
     ]);
     setSavedQR(null); 
@@ -329,7 +353,7 @@ export const ExhibitManagerView: React.FC = () => {
           <hr style={{ borderColor: '#33332F', margin: '24px 0' }} />
           <h3 style={{ color: '#D49B4B', marginTop: 0, marginBottom: '16px' }}>Nội Dung & Audio Đa Ngôn Ngữ</h3>
 
-          {/* [UC-12] Giao diện điền nội dung Thuyết minh đa ngôn ngữ (Text & Audio) */}
+          {/* [UC-12] Giao diện điền Tên hiện vật, Nội dung Thuyết minh & Audio đa ngôn ngữ */}
           {translations.map((trans, index) => (
             <div key={trans.langCode} style={{ padding: '16px', backgroundColor: '#141413', borderRadius: '8px', marginBottom: '16px', borderLeft: `4px solid ${index === 0 ? '#2EBD85' : '#3B82F6'}`, position: 'relative' }}>
               <h4 style={{ margin: '0 0 12px 0', color: index === 0 ? '#2EBD85' : '#3B82F6' }}>Ngôn ngữ: {trans.langName} {index === 0 && '(Bắt buộc)'}</h4>
@@ -351,6 +375,21 @@ export const ExhibitManagerView: React.FC = () => {
                   {trans.audioBase64 && <button type="button" onClick={() => clearAudio(trans.langCode)} style={{ padding: '8px 12px', backgroundColor: '#DC3545', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}>X Xóa audio</button>}
                 </div>
               </div>
+
+              {/* CHỈ HIỆN Ô NHẬP TÊN HIỆN VẬT KHI LÀ HIỆN VẬT LẺ (!isZoneAudio) */}
+              {!isZoneAudio && (
+                <div className="museum-form-group" style={{ marginBottom: '12px' }}>
+                  <label className="museum-label">Tên hiện vật ({trans.langName}):</label>
+                  <input
+                    type="text"
+                    className="museum-input"
+                    placeholder={index === 0 ? 'VD: Máy bay trực thăng UH-1...' : `Nhập tên hiện vật (${trans.langName})...`}
+                    value={trans.title}
+                    onChange={(e) => updateTranslationTitle(trans.langCode, e.target.value)}
+                    required={index === 0}
+                  />
+                </div>
+              )}
 
               <div className="museum-form-group">
                 <label className="museum-label">Nội dung thuyết minh ({trans.langName}):</label>
@@ -402,7 +441,7 @@ export const ExhibitManagerView: React.FC = () => {
                 <tr style={{ backgroundColor: '#1E1E1C', textAlign: 'left' }}>
                   <th style={{ padding: '12px', borderBottom: '1px solid #333' }}>Mã (ID)</th>
                   <th style={{ padding: '12px', borderBottom: '1px solid #333' }}>Khu Vực</th>
-                  <th style={{ padding: '12px', borderBottom: '1px solid #333' }}>Tên Hệ Thống</th>
+                  <th style={{ padding: '12px', borderBottom: '1px solid #333' }}>Tên Hiện Vật</th>
                   <th style={{ padding: '12px', borderBottom: '1px solid #333' }}>File đính kèm</th>
                   <th style={{ padding: '12px', borderBottom: '1px solid #333' }}>Thao tác</th>
                 </tr>

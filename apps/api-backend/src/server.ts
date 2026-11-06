@@ -1,6 +1,7 @@
 /**
  * apps/api-backend/src/server.ts
  */
+dotenv.config();
 import express, { Request, Response } from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
@@ -11,16 +12,18 @@ import sql from 'mssql'; // <-- Đã thêm mssql
 import { exhibitBus } from './bus/exhibitBus';
 import { passDao } from './dao/passDao';
 
-dotenv.config();
+
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 // Tự động thiết lập cấu hình DB từ biến môi trường .env (Không lo lỗi import file)
-const dbConfig = {
+// Đồng bộ chuẩn xác với passDao.ts và exhibitDao.ts
+const dbConfig: sql.config = {
   user: process.env.DB_USER || 'sa',
-  password: process.env.DB_PASSWORD || '123456', // ⚠️ ĐỔI THÀNH MẬT KHẨU SQL CỦA BẠN NẾU KHÁC 123456
-  server: process.env.DB_SERVER || 'localhost',
+  password: process.env.DB_PASSWORD || 'Museum@Admin2026!',
+  server: process.env.DB_SERVER || '127.0.0.1',
+  port: 1433,
   database: process.env.DB_NAME || 'MuseumDB',
   options: {
     encrypt: false,
@@ -302,12 +305,13 @@ app.get('/api/analytics/summary', async (_req: Request, res: Response) => {
     const sysResult = await pool.request().query(`SELECT LiveGuestCount, TotalListens FROM SystemAnalytics WHERE ID = 1`);
     const sysData = sysResult.recordset[0] || { LiveGuestCount: 0, TotalListens: 0 };
 
-    // SỬA LỖI Ở ĐÂY: Thêm điều kiện kiểm tra ActivationDate để chỉ đếm vé chưa hết hạn (trong vòng 24h)
+    // Chỉ đếm thiết bị của các vé đang Active và chưa quá 24 giờ kể từ lúc kích hoạt
     const onlineResult = await pool.request().query(`
       SELECT ISNULL(SUM(UsedDevices), 0) AS TotalOnline 
       FROM PassHistory 
       WHERE Status = 'Active' 
-      AND (ActivationDate IS NULL OR DATEDIFF(HOUR, ActivationDate, GETDATE()) <= 24)
+      AND ActivationDate IS NOT NULL 
+      AND GETDATE() <= DATEADD(hour, 24, ActivationDate)
     `);
     const totalOnline = onlineResult.recordset[0].TotalOnline;
 
@@ -323,7 +327,48 @@ app.get('/api/analytics/summary', async (_req: Request, res: Response) => {
   }
 });
 
+// Kiểm tra kết nối SQL Server và tự động đồng bộ cấu trúc bảng khi khởi động
+async function checkAndInitSQL() {
+  try {
+    const pool = await sql.connect(dbConfig);
+    console.log('✅ Đã kết nối SQL Server (MuseumDB) thành công!');
+
+    // Tự động tạo bảng SystemAnalytics và cột ListenCount nếu trong DB chưa có
+    await pool.request().query(`
+      IF COL_LENGTH('Exhibits', 'ListenCount') IS NULL
+      BEGIN
+        ALTER TABLE Exhibits ADD ListenCount INT DEFAULT 0 WITH VALUES;
+      END
+
+      IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='SystemAnalytics' AND xtype='U')
+      BEGIN
+        CREATE TABLE SystemAnalytics (
+          ID INT PRIMARY KEY DEFAULT 1,
+          LiveGuestCount INT DEFAULT 0,
+          TotalListens INT DEFAULT 0
+        );
+        INSERT INTO SystemAnalytics (ID, LiveGuestCount, TotalListens) VALUES (1, 0, 0);
+      END
+    `);
+    console.log('✅ Đã đồng bộ cấu trúc bảng SQL thành công!');
+  } catch (err: any) {
+    console.error('❌ LỖI KẾT NỐI SQL SERVER:', err.message);
+  }
+}
+
 // Chạy server
+// 1. Định nghĩa các API route nằm ĐỘC LẬP bên ngoài
+app.put('/api/passes/:id/revoke', async (req: Request, res: Response) => {
+  try {
+    await passDao.revokePass(req.params.id as string);
+    res.json({ success: true, message: 'Đã khóa mã vé trong SQL' });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Lỗi khi khóa mã vé' });
+  }
+});
+
+// 2. Cuối cùng mới đến lệnh chạy server
 server.listen(PORT, () => {
   console.log(`🚀 Server đang chạy tại: http://localhost:${PORT}`);
+  checkAndInitSQL();
 });
