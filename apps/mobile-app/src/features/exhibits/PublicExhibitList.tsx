@@ -592,6 +592,21 @@ export const PublicExhibitList: React.FC<Props> = ({
   onExhibitPlayed,
 }) => {
   const apiBaseUrl = '';
+  const logAnalyticsEvent = (
+    eventType: 'LANGUAGE_CHANGE' | 'PLAY_START' | 'REPLAY_EVENT' | 'SEEK_BACKWARD',
+    exhibitId?: string,
+    customLang?: string
+  ) => {
+    fetch(`http://${window.location.hostname}:3000/api/analytics/event`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        eventType,
+        exhibitId: exhibitId || selectedExhibit?.ExhibitID || null,
+        langCode: customLang || lang,
+      }),
+    }).catch((err) => console.error('Lỗi gửi thống kê:', err));
+  };
 
   const [exhibits, setExhibits] = useState<DbExhibit[]>([]);
   
@@ -1006,6 +1021,8 @@ export const PublicExhibitList: React.FC<Props> = ({
       });
 
       if (onExhibitPlayed) onExhibitPlayed(exhibit.ExhibitID);
+      // [UC-10] Ghi nhận sự kiện bắt đầu phát thuyết minh vào SQL
+      logAnalyticsEvent('PLAY_START', exhibit.ExhibitID, lang);
     } else {
       // [UC-14] Bước 7: Khách vãng lai: Hiển thị Popup giới thiệu (Teaser) yêu cầu mua/kích hoạt
       setModalStep('TEASER');
@@ -1019,6 +1036,10 @@ export const PublicExhibitList: React.FC<Props> = ({
       setShowReplayBadge(true);
       setTimeout(() => setShowReplayBadge(false), 1500);
       if (selectedExhibit && onExhibitPlayed) onExhibitPlayed(selectedExhibit.ExhibitID);
+
+      // [UC-11] Ghi nhận sự kiện nghe lại từ đầu (REPLAY_EVENT) hoặc tua lùi câu chữ (SEEK_BACKWARD) vào SQL
+      const evType = safeIdx === 0 ? 'REPLAY_EVENT' : 'SEEK_BACKWARD';
+      logAnalyticsEvent(evType, selectedExhibit?.ExhibitID, lang);
     }
 
     setActiveLineIdx(safeIdx);
@@ -2309,6 +2330,9 @@ export const PublicExhibitList: React.FC<Props> = ({
                     onClick={() => {
                       setLang(k);
                       setModalStep('NONE');
+
+                      // ➔ Thêm dòng này để ghi nhận sự kiện chuyển đổi ngôn ngữ (UC-09) xuống SQL:
+                      logAnalyticsEvent('LANGUAGE_CHANGE', selectedExhibit?.ExhibitID, k);
                     }}
                     className={`w-full p-3 rounded-2xl border ${
                       isSelected

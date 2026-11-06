@@ -277,10 +277,10 @@ export const ExhibitManagerView: React.FC = () => {
   });
 
   return (
-    <div className="museum-container" style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
       
       {/* KHỐI 1: FORM NHẬP LIỆU */}
-      <div className="museum-card" style={{ maxWidth: '850px', width: '100%' }}>
+      <div className="museum-card" style={{ width: '100%', boxSizing: 'border-box' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
           <h2 className="museum-section-title" style={{ margin: 0 }}>
             {isEditing ? (isZoneAudio ? 'Sửa Âm Thanh Khu Vực' : 'Sửa Thông Tin Hiện Vật') : 'Thêm Dữ Liệu Mới'}
@@ -429,7 +429,7 @@ export const ExhibitManagerView: React.FC = () => {
       </div>
       
       {/* KHỐI 2: DANH SÁCH (ĐÃ LỌC TỰ ĐỘNG) */}
-      <div className="museum-card" style={{ width: '100%', maxWidth: '850px' }}>
+      <div className="museum-card" style={{ width: '100%', boxSizing: 'border-box' }}>
         <h2 className="museum-section-title">
           {isZoneAudio ? 'Danh Sách Âm Thanh Các Khu Vực' : 'Danh Sách Hiện Vật Lẻ'}
         </h2>

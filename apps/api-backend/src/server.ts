@@ -7,18 +7,15 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import { Server } from 'socket.io';
 import http from 'http'; 
-import sql from 'mssql'; // <-- Đã thêm mssql
+import sql from 'mssql';
 
 import { exhibitBus } from './bus/exhibitBus';
 import { passDao } from './dao/passDao';
 
-
-
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Tự động thiết lập cấu hình DB từ biến môi trường .env (Không lo lỗi import file)
-// Đồng bộ chuẩn xác với passDao.ts và exhibitDao.ts
+// Tự động thiết lập cấu hình DB từ biến môi trường .env
 const dbConfig: sql.config = {
   user: process.env.DB_USER || 'sa',
   password: process.env.DB_PASSWORD || 'Museum@Admin2026!',
@@ -72,9 +69,7 @@ io.on('connection', (socket) => {
       }
     });
     
-    // Ghi số vãng lai vào SQL Server
     updateSQLGuestCount(uniqueGuests.size);
-
     io.emit('UPDATE_CONNECTIONS', { total: uniqueGuests.size });
   };
 
@@ -103,7 +98,7 @@ function generateRandomPin(): string {
 }
 
 // ==========================================
-// CÁC API CŨ CỦA HỆ THỐNG
+// CÁC API CỦA HỆ THỐNG
 // ==========================================
 
 app.get('/api/health', (_req: Request, res: Response) => {
@@ -267,73 +262,126 @@ app.post('/api/passes/release', async (req: Request, res: Response) => {
   }
 });
 
-// ==========================================
-// CÁC API MỚI CHO DASHBOARD THỐNG KÊ
-// ==========================================
-
-app.post('/api/analytics/listen', async (req: Request, res: Response) => {
+app.put('/api/passes/:id/revoke', async (req: Request, res: Response) => {
   try {
-    const { exhibitId } = req.body;
-    let pool = await sql.connect(dbConfig);
-    
-    await pool.request().query(`
-      UPDATE SystemAnalytics 
-      SET TotalListens = TotalListens + 1 
-      WHERE ID = 1;
-    `);
-
-    if (exhibitId) {
-      await pool.request()
-        .input('exhibitId', sql.VarChar, exhibitId)
-        .query(`
-          UPDATE Exhibits 
-          SET ListenCount = ListenCount + 1 
-          WHERE ExhibitID = @exhibitId;
-        `);
-    }
-    res.json({ success: true });
+    await passDao.revokePass(req.params.id as string);
+    res.json({ success: true, message: 'Đã khóa mã vé trong SQL' });
   } catch (error) {
-    console.error('Lỗi khi tăng lượt nghe SQL:', error);
-    res.status(500).json({ success: false });
+    res.status(500).json({ success: false, message: 'Lỗi khi khóa mã vé' });
   }
 });
 
-app.get('/api/analytics/summary', async (_req: Request, res: Response) => {
-  try {
-    let pool = await sql.connect(dbConfig);
-    
-    const sysResult = await pool.request().query(`SELECT LiveGuestCount, TotalListens FROM SystemAnalytics WHERE ID = 1`);
-    const sysData = sysResult.recordset[0] || { LiveGuestCount: 0, TotalListens: 0 };
+// ==========================================
+// CÁC API THỐNG KÊ MỚI (UC-09, UC-10, UC-11)
+// ==========================================
 
-    // Chỉ đếm thiết bị của các vé đang Active và chưa quá 24 giờ kể từ lúc kích hoạt
-    const onlineResult = await pool.request().query(`
-      SELECT ISNULL(SUM(UsedDevices), 0) AS TotalOnline 
-      FROM PassHistory 
-      WHERE Status = 'Active' 
-      AND ActivationDate IS NOT NULL 
-      AND GETDATE() <= DATEADD(hour, 24, ActivationDate)
+// 1. Ghi nhận sự kiện hành vi từ Mobile App xuống SQL
+app.post('/api/analytics/event', async (req: Request, res: Response) => {
+  const { eventType, exhibitId, langCode } = req.body;
+  try {
+    const pool = await sql.connect(dbConfig);
+    await pool.request()
+      .input('EventType', sql.VarChar(50), eventType)
+      .input('ExhibitID', sql.VarChar(50), exhibitId || null)
+      .input('LangCode', sql.VarChar(10), (langCode || 'vi').toLowerCase())
+      .query(`
+        INSERT INTO AnalyticsEvents (EventType, ExhibitID, LangCode, CreatedAt)
+        VALUES (@EventType, @ExhibitID, @LangCode, GETDATE())
+      `);
+
+    // Nếu là sự kiện bắt đầu phát (UC-10), cập nhật cột ListenCount trong bảng Exhibits
+    if (eventType === 'PLAY_START' && exhibitId) {
+      await pool.request()
+        .input('ExhibitID', sql.VarChar(50), exhibitId)
+        .query(`UPDATE Exhibits SET ListenCount = ISNULL(ListenCount, 0) + 1 WHERE ExhibitID = @ExhibitID`);
+    }
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Lỗi ghi sự kiện thống kê SQL:', err);
+    res.status(500).json({ success: false, message: 'Lỗi ghi nhận thống kê vào SQL' });
+  }
+});
+
+// 2. Truy vấn và tổng hợp báo cáo cho Dashboard (UC-09, UC-10, UC-11)
+app.get('/api/analytics/reports', async (req: Request, res: Response) => {
+  const period = (req.query.period as string) || 'all';
+  let dateCondition = '';
+
+  if (period === 'day') {
+    dateCondition = 'AND CreatedAt >= DATEADD(DAY, -1, GETDATE())';
+  } else if (period === 'week') {
+    dateCondition = 'AND CreatedAt >= DATEADD(DAY, -7, GETDATE())';
+  } else if (period === 'month') {
+    dateCondition = 'AND CreatedAt >= DATEADD(DAY, -30, GETDATE())';
+  }
+
+  try {
+    const pool = await sql.connect(dbConfig);
+
+    // UC-09: Thống kê ngôn ngữ phổ biến
+    const langResult = await pool.request().query(`
+      SELECT LOWER(LangCode) AS langCode, COUNT(*) AS count
+      FROM AnalyticsEvents
+      WHERE EventType IN ('LANGUAGE_CHANGE', 'PLAY_START')
+        AND LangCode IS NOT NULL ${dateCondition}
+      GROUP BY LOWER(LangCode)
+      ORDER BY count DESC
     `);
-    const totalOnline = onlineResult.recordset[0].TotalOnline;
+
+    // UC-10: Thống kê hiện vật được nghe nhiều nhất
+    const mostListenedResult = await pool.request().query(`
+      SELECT 
+        ev.ExhibitID AS exhibitId,
+        ISNULL(ex.ExhibitName, N'Hiện vật #' + ev.ExhibitID) AS exhibitName,
+        ISNULL(ex.ZoneCode, 1) AS zoneCode,
+        COUNT(*) AS playCount
+      FROM AnalyticsEvents ev
+      LEFT JOIN Exhibits ex ON ev.ExhibitID = ex.ExhibitID
+      WHERE ev.EventType = 'PLAY_START'
+        AND ev.ExhibitID IS NOT NULL ${dateCondition}
+      GROUP BY ev.ExhibitID, ex.ExhibitName, ex.ZoneCode
+      ORDER BY playCount DESC
+    `);
+
+    // UC-11: Thống kê hiện vật được nghe lại / tua lùi nhiều nhất
+    const mostReplayedResult = await pool.request().query(`
+      SELECT 
+        ev.ExhibitID AS exhibitId,
+        ISNULL(ex.ExhibitName, N'Hiện vật #' + ev.ExhibitID) AS exhibitName,
+        ISNULL(ex.ZoneCode, 1) AS zoneCode,
+        SUM(CASE WHEN ev.EventType = 'REPLAY_EVENT' THEN 1 ELSE 0 END) AS replayCount,
+        SUM(CASE WHEN ev.EventType = 'SEEK_BACKWARD' THEN 1 ELSE 0 END) AS seekBackwardCount,
+        COUNT(*) AS totalReplays
+      FROM AnalyticsEvents ev
+      LEFT JOIN Exhibits ex ON ev.ExhibitID = ex.ExhibitID
+      WHERE ev.EventType IN ('REPLAY_EVENT', 'SEEK_BACKWARD')
+        AND ev.ExhibitID IS NOT NULL ${dateCondition}
+      GROUP BY ev.ExhibitID, ex.ExhibitName, ex.ZoneCode
+      ORDER BY totalReplays DESC
+    `);
 
     res.json({
       success: true,
-      liveGuestCount: sysData.LiveGuestCount,
-      totalListens: sysData.TotalListens,
-      totalOnline: totalOnline
+      languages: langResult.recordset,
+      mostListened: mostListenedResult.recordset,
+      mostReplayed: mostReplayedResult.recordset
     });
-  } catch (error) {
-    console.error('Lỗi lấy thống kê SQL:', error);
-    res.status(500).json({ success: false });
+  } catch (err) {
+    console.error('Lỗi truy vấn báo cáo thống kê SQL:', err);
+    res.status(500).json({ success: false, message: 'Không tải được dữ liệu thống kê từ SQL Server' });
   }
 });
 
-// Kiểm tra kết nối SQL Server và tự động đồng bộ cấu trúc bảng khi khởi động
+// ==========================================
+// KHỞI TẠO VÀ ĐỒNG BỘ CẤU TRÚC BẢNG SQL KHI KHỞI ĐỘNG
+// ==========================================
 async function checkAndInitSQL() {
   try {
     const pool = await sql.connect(dbConfig);
     console.log('✅ Đã kết nối SQL Server (MuseumDB) thành công!');
 
-    // Tự động tạo bảng SystemAnalytics và cột ListenCount nếu trong DB chưa có
+    // Tự động tạo bảng AnalyticsEvents, SystemAnalytics và cột ListenCount nếu chưa có
     await pool.request().query(`
       IF COL_LENGTH('Exhibits', 'ListenCount') IS NULL
       BEGIN
@@ -349,25 +397,25 @@ async function checkAndInitSQL() {
         );
         INSERT INTO SystemAnalytics (ID, LiveGuestCount, TotalListens) VALUES (1, 0, 0);
       END
+
+      IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'AnalyticsEvents')
+      BEGIN
+        CREATE TABLE AnalyticsEvents (
+            EventID INT IDENTITY(1,1) PRIMARY KEY,
+            EventType VARCHAR(50) NOT NULL,
+            ExhibitID VARCHAR(50) NULL,
+            LangCode VARCHAR(10) NULL,
+            CreatedAt DATETIME DEFAULT GETDATE()
+        );
+      END
     `);
-    console.log('✅ Đã đồng bộ cấu trúc bảng SQL thành công!');
+    console.log('✅ Đã đồng bộ toàn bộ cấu trúc bảng SQL (bao gồm UC-09, 10, 11) thành công!');
   } catch (err: any) {
     console.error('❌ LỖI KẾT NỐI SQL SERVER:', err.message);
   }
 }
 
 // Chạy server
-// 1. Định nghĩa các API route nằm ĐỘC LẬP bên ngoài
-app.put('/api/passes/:id/revoke', async (req: Request, res: Response) => {
-  try {
-    await passDao.revokePass(req.params.id as string);
-    res.json({ success: true, message: 'Đã khóa mã vé trong SQL' });
-  } catch (error) {
-    res.status(500).json({ success: false, message: 'Lỗi khi khóa mã vé' });
-  }
-});
-
-// 2. Cuối cùng mới đến lệnh chạy server
 server.listen(PORT, () => {
   console.log(`🚀 Server đang chạy tại: http://localhost:${PORT}`);
   checkAndInitSQL();

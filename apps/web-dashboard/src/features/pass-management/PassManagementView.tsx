@@ -20,12 +20,10 @@ export const PassManagementView: React.FC<PassManagementProps> = ({
   setPassHistory,
   onRevokePass,
 }) => {
-  
   const [selectedCategory, setSelectedCategory] = useState<PassCategory>('SINGLE_VISITOR');
   const [groupSize, setGroupSize] = useState<number>(15);
 
   const handleIssueNewPass = async () => {
-    // 1. Sinh mã PIN và dữ liệu cục bộ (như cũ)
     const existingPins = passHistory.map((item) => item.pinCode);
     const newPass = createAutoActivationPass({
       category: selectedCategory,
@@ -34,44 +32,44 @@ export const PassManagementView: React.FC<PassManagementProps> = ({
       existingPins,
     });
 
-    // 2. GỌI API LƯU XUỐNG SQL SERVER
     try {
-      const response = await fetch('http://localhost:3000/api/passes/buy', {
+      const response = await fetch(`http://${window.location.hostname}:3000/api/passes/buy`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          passId: newPass.pinCode, // Sử dụng luôn PIN 6 ký tự vừa sinh làm PassID
-          amount: newPass.priceVnd, // Lấy giá tiền theo gói vé
-          packageType: newPass.isInternalAdmin ? 'Mã Admin' : newPass.category === 'GROUP_VISITOR' ? 'Vé Đoàn' : 'Vé Khách Lẻ',
-          participantCount: newPass.maxDevices, // Số lượng người/máy
-          deviceLimit: newPass.maxDevices
-        })
+          passId: newPass.pinCode,
+          amount: newPass.priceVnd,
+          packageType: newPass.isInternalAdmin
+            ? 'Mã Admin'
+            : newPass.category === 'GROUP_VISITOR'
+            ? 'Vé Đoàn'
+            : 'Vé Khách Lẻ',
+          participantCount: newPass.maxDevices,
+          deviceLimit: newPass.maxDevices,
+        }),
       });
 
       if (!response.ok) {
-        throw new Error('Lỗi từ Server SQL');
+        throw new Error('Lỗi khi lưu mã vé');
       }
 
-      // 3. Nếu SQL Server lưu thành công, mới cập nhật giao diện (như cũ)
       setPassHistory((prev) => [newPass, ...prev]);
-
     } catch (error) {
-      console.error('Lỗi khi lưu mã vé vào SQL:', error);
-      alert('Không thể lưu mã vé vào SQL Server. Vui lòng kiểm tra lại kết nối!');
+      console.error('Lỗi khi lưu mã vé:', error);
+      alert('Không thể lưu mã vé. Vui lòng kiểm tra lại kết nối máy chủ!');
     }
   };
 
   return (
-    <div className="museum-container">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
       {/* KHỐI 1: TỰ ĐỘNG SINH MÃ */}
-      <div className="museum-card">
+      <div className="museum-card" style={{ marginBottom: 0 }}>
         <h2 className="museum-section-title">
-          1. Cấp Mã Kích Hoạt Thuyết Minh Tự Động (QR Pass & PIN 6 Ký Tự)
+          1. Cấp Mã Kích Hoạt Thuyết Minh (QR Pass & PIN 6 Ký Tự)
         </h2>
         <div className="museum-form-grid">
-        
           <div className="museum-form-group">
             <label className="museum-label">Loại mã cần cấp</label>
             <select
@@ -103,99 +101,104 @@ export const PassManagementView: React.FC<PassManagementProps> = ({
         </button>
       </div>
 
-      {/* KHỐI 2: TRANG LỊCH SỬ VÀ THAO TÁC KHÓA MÃ */}
-      <div className="museum-card">
+      {/* KHỐI 2: BẢNG LỊCH SỬ VÀ ĐỐI SOÁT */}
+      <div className="museum-card" style={{ marginBottom: 0 }}>
         <h2 className="museum-section-title">
           2. Lịch Sử Cấp Mã Kích Hoạt & Đối Soát Trạng Thái
         </h2>
-        <table className="museum-table">
-          <thead>
-            <tr>
-              <th>Mã PIN (6 ký tự)</th>
-              <th>Phân loại</th>
-              <th>Thiết bị đã dùng</th>
-              <th>Phí thu</th>
-              <th>Trạng thái</th>
-              <th>Thời điểm cấp</th>
-              <th>Thời điểm kích hoạt</th>
-              <th>Thao tác</th>
-            </tr>
-          </thead>
-          <tbody>
-            {passHistory.map((record) => (
-              <tr key={record.id}>
-                <td>
-                  <strong>{record.pinCode}</strong>
-                </td>
-                <td>
-                  {record.isInternalAdmin ? (
-                    <span className="museum-badge badge-admin">MÃ ADMIN</span>
-                  ) : record.category === 'GROUP_VISITOR' ? (
-                    'Vé Đoàn'
-                  ) : (
-                    'Vé Lẻ'
-                  )}
-                </td>
-                <td>
-                  <strong>{record.usedDevices}</strong> / {record.maxDevices} máy
-                </td>
-                <td>{record.priceVnd.toLocaleString('vi-VN')} đ</td>
-                <td>
-                  <span
-                    className={`museum-badge ${
-                      record.status === 'ACTIVE'
-                        ? 'badge-active'
-                        : record.status === 'UNUSED'
-                        ? 'badge-unused'
-                        : 'badge-expired'
-                    }`}
-                    style={
-                      (record.status as string) === 'INACTIVE'
-                        ? { backgroundColor: 'rgba(212, 155, 75, 0.2)', color: '#E8B86D', border: '1px solid #D49B4B' }
-                        : undefined
-                    }
-                  >
-                    {record.status === 'ACTIVE'
-                      ? 'Đang hoạt động'
-                      : (record.status as string) === 'INACTIVE'
-                      ? 'Ngưng hoạt động (Còn hạn)'
-                      : (record.status as string) === 'EXPIRED'
-                      ? 'Đã hết hạn (24h)'
-                      : record.status === 'UNUSED'
-                      ? 'Chưa quét'
-                      : 'Đã khóa'}
-                  </span>
-                </td>
-                <td>{record.createdAt}</td>
-                <td>
-                  {record.activatedAt ? (
-                    <span style={{ color: '#2EBD85', fontWeight: 'bold' }}>
-                      {record.activatedAt}
-                    </span>
-                  ) : (
-                    <span style={{ color: '#9E9D96', fontStyle: 'italic' }}>
-                      Chưa kích hoạt
-                    </span>
-                  )}
-                </td>
-                <td>
-                  {record.status !== 'REVOKED' ? (
-                    <button
-                      className="museum-btn-danger"
-                      onClick={() => onRevokePass(record.id)}
-                    >
-                      Khóa mã
-                    </button>
-                  ) : (
-                    <span style={{ color: '#E05252', fontSize: '12px' }}>Đã thu hồi</span>
-                  )}
-                </td>
+        <div style={{ overflowX: 'auto' }}>
+          <table className="museum-table">
+            <thead>
+              <tr>
+                <th>Mã PIN</th>
+                <th>Phân loại</th>
+                <th>Thiết bị đã dùng</th>
+                <th>Phí thu</th>
+                <th>Trạng thái</th>
+                <th>Thời điểm cấp</th>
+                <th>Thời điểm kích hoạt</th>
+                <th>Thao tác</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {passHistory.map((record) => (
+                <tr key={record.id}>
+                  <td>
+                    <strong style={{ color: '#D49B4B' }}>{record.pinCode}</strong>
+                  </td>
+                  <td>
+                    {record.isInternalAdmin ? (
+                      <span className="museum-badge badge-admin">MÃ ADMIN</span>
+                    ) : record.category === 'GROUP_VISITOR' ? (
+                      'Vé Đoàn'
+                    ) : (
+                      'Vé Lẻ'
+                    )}
+                  </td>
+                  <td>
+                    <strong>{record.usedDevices}</strong> / {record.maxDevices} máy
+                  </td>
+                  <td>{record.priceVnd.toLocaleString('vi-VN')} đ</td>
+                  <td>
+                    <span
+                      className={`museum-badge ${
+                        record.status === 'ACTIVE'
+                          ? 'badge-active'
+                          : record.status === 'UNUSED'
+                          ? 'badge-unused'
+                          : 'badge-expired'
+                      }`}
+                      style={
+                        (record.status as string) === 'INACTIVE'
+                          ? {
+                              backgroundColor: 'rgba(212, 155, 75, 0.2)',
+                              color: '#E8B86D',
+                              border: '1px solid #D49B4B',
+                            }
+                          : undefined
+                      }
+                    >
+                      {record.status === 'ACTIVE'
+                        ? 'Đang hoạt động'
+                        : (record.status as string) === 'INACTIVE'
+                        ? 'Ngưng hoạt động (Còn hạn)'
+                        : (record.status as string) === 'EXPIRED'
+                        ? 'Đã hết hạn (24h)'
+                        : record.status === 'UNUSED'
+                        ? 'Chưa quét'
+                        : 'Đã khóa'}
+                    </span>
+                  </td>
+                  <td>{record.createdAt}</td>
+                  <td>
+                    {record.activatedAt ? (
+                      <span style={{ color: '#2EBD85', fontWeight: 'bold' }}>
+                        {record.activatedAt}
+                      </span>
+                    ) : (
+                      <span style={{ color: '#9E9D96', fontStyle: 'italic' }}>
+                        Chưa kích hoạt
+                      </span>
+                    )}
+                  </td>
+                  <td>
+                    {record.status !== 'REVOKED' ? (
+                      <button
+                        className="museum-btn-danger"
+                        onClick={() => onRevokePass(record.id)}
+                      >
+                        Khóa mã
+                      </button>
+                    ) : (
+                      <span style={{ color: '#E05252', fontSize: '12px' }}>Đã thu hồi</span>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
-    
   );
 };

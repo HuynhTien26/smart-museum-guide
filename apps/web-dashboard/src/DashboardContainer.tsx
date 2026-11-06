@@ -17,14 +17,9 @@ const STORAGE_KEY_LISTEN = 'MUSEUM_LISTENED_COUNT_V1';
 
 export const DashboardContainer: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'EXHIBITS' | 'PASSES' | 'SQL_HISTORY' | 'ANALYTICS'>('PASSES');
-
-  // Khai báo state tổng kết nối ở TRONG Component
   const [, setTotalConnections] = useState<number>(0);
-
-  // Khởi tạo passHistory rỗng, sẽ được fetch từ SQL
   const [passHistory, setPassHistory] = useState<ActivationPassRecord[]>([]);
 
-  // Lấy dữ liệu từ SQL Server khi load trang
   useEffect(() => {
     const fetchPasses = async () => {
       try {
@@ -42,9 +37,8 @@ export const DashboardContainer: React.FC = () => {
             usedDevices: sqlRecord.UsedDevices || 0,
             priceVnd: sqlRecord.Amount || 0,
             isInternalAdmin: sqlRecord.PackageType === 'Mã Admin',
-            // 1
             status: localStorage.getItem(`LOCKED_${sqlRecord.PassID}`) === 'true' ? 'REVOKED' : (sqlRecord.Status || 'UNUSED') as any,
-            issuedBy: 'Hệ thống SQL',
+            issuedBy: 'Hệ thống',
             createdAt: sqlRecord.PurchaseDate ? new Date(sqlRecord.PurchaseDate).toLocaleString('vi-VN') : '',
             expiresAt: '24h kể từ khi kích hoạt',
             activatedAt: sqlRecord.ActivationDate ? new Date(sqlRecord.ActivationDate).toLocaleString('vi-VN') : undefined,
@@ -52,12 +46,12 @@ export const DashboardContainer: React.FC = () => {
           setPassHistory(formattedData);
         }
       } catch (error) {
-        console.error('Lỗi khi fetch pass history từ SQL:', error);
+        console.error('Lỗi khi tải lịch sử vé:', error);
       }
     };
 
     fetchPasses();
-    const interval = setInterval(fetchPasses, 3000); // Tự động đồng bộ SQL mỗi 3 giây
+    const interval = setInterval(fetchPasses, 3000);
     return () => clearInterval(interval);
   }, []);
 
@@ -65,10 +59,6 @@ export const DashboardContainer: React.FC = () => {
     const saved = localStorage.getItem(STORAGE_KEY_LISTEN);
     return saved ? Number(saved) : 0;
   });
-
-  // [UC-08] Tính toán số lượng thiết bị đang kết nối dựa trên mã kích hoạt (Active)
-  // Lấy tổng số thiết bị đang kết nối từ passHistory 
-  // Đang Online (Đã nhập PIN)
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY_LISTEN, listenedCount.toString());
@@ -106,11 +96,11 @@ export const DashboardContainer: React.FC = () => {
         return updated;
       });
     });
-    // Số lượng "Tổng Lượt Nghe"
+
     const unsubPlay = realtimeBus.subscribe('PLAY_EXHIBIT', () => {
       setListenedCount((prev) => prev + 1);
     });
-    // Số lượng "Khách Vãng Lai"
+
     const unsubConnections = realtimeBus.subscribe('UPDATE_CONNECTIONS', (payload: any) => {
       setTotalConnections(payload.total);
     });
@@ -118,53 +108,47 @@ export const DashboardContainer: React.FC = () => {
     return () => {
       unsubActivate();
       unsubPlay();
-      unsubConnections(); // Hủy lắng nghe khi đóng trang
+      unsubConnections();
     };
   }, []);
 
   const handleRevokePass = async (passId: string) => {
     localStorage.setItem(`LOCKED_${passId}`, 'true');
-  // 1. Cập nhật giao diện và bắn WebSocket ngay lập tức (giữ nguyên)
-  setPassHistory((prev) =>
-    prev.map((item) => (item.id === passId ? { ...item, status: 'REVOKED' as const } : item))
-  );
-  realtimeSyncService.broadcastFromDashboard('PASS_REVOKED', { passId });
+    setPassHistory((prev) =>
+      prev.map((item) => (item.id === passId ? { ...item, status: 'REVOKED' as const } : item))
+    );
+    realtimeSyncService.broadcastFromDashboard('PASS_REVOKED', { passId });
 
-  // 2. BỔ SUNG: Gọi API cập nhật xuống SQL Server để không bị đè dữ liệu cũ
-  try {
-    await fetch(`http://${window.location.hostname}:3000/api/passes/${passId}/revoke`, {
-      method: 'PUT', // Hoặc POST tùy theo Backend của bạn viết
-      headers: {
-        'Content-Type': 'application/json'
-      }
-    });
-  } catch (error) {
-    console.error('Lỗi khi cập nhật SQL:', error);
-  }
-};
+    try {
+      await fetch(`http://${window.location.hostname}:3000/api/passes/${passId}/revoke`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' }
+      });
+    } catch (error) {
+      console.error('Lỗi khi cập nhật trạng thái khóa mã:', error);
+    }
+  };
 
   return (
     <div style={{ backgroundColor: '#141413', minHeight: '100vh', color: '#F4F3EF' }}>
-      <nav style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 32px', borderBottom: '1px solid #33332F', backgroundColor: '#1E1E1C' }}>
-        <h1 style={{ fontSize: '20px', margin: 0, color: '#D49B4B' }}>🏛️ BẢO TÀNG CHỨNG TÍCH CHIẾN TRANH - HỆ THỐNG QUẢN TRỊ</h1>
-        <div style={{ display: 'flex', gap: '12px' }}>
-          {/* Menu Điều hướng - Render UI tương ứng với [UC-12], [UC-08] */}
+      <nav style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 32px', borderBottom: '1px solid #33332F', backgroundColor: '#1E1E1C', flexWrap: 'wrap', gap: '12px' }}>
+        <h1 style={{ fontSize: '19px', margin: 0, color: '#D49B4B', letterSpacing: '0.5px' }}>
+          🏛️ BẢO TÀNG CHỨNG TÍCH CHIẾN TRANH - HỆ THỐNG QUẢN TRỊ
+        </h1>
+        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
           <button className="museum-btn-primary" style={{ backgroundColor: activeTab === 'EXHIBITS' ? '#D49B4B' : 'transparent', color: activeTab === 'EXHIBITS' ? '#141413' : '#F4F3EF', border: '1px solid #D49B4B' }} onClick={() => setActiveTab('EXHIBITS')}>Quản Lý Hiện Vật</button>
           <button className="museum-btn-primary" style={{ backgroundColor: activeTab === 'PASSES' ? '#D49B4B' : 'transparent', color: activeTab === 'PASSES' ? '#141413' : '#F4F3EF', border: '1px solid #D49B4B' }} onClick={() => setActiveTab('PASSES')}>Cấp Mã Vé & Lịch Sử</button>
-          <button className="museum-btn-primary" style={{ backgroundColor: activeTab === 'SQL_HISTORY' ? '#D49B4B' : 'transparent', color: activeTab === 'SQL_HISTORY' ? '#141413' : '#F4F3EF', border: '1px solid #D49B4B' }} onClick={() => setActiveTab('SQL_HISTORY')}>Lịch Sử Thanh Toán SQL</button>
+          <button className="museum-btn-primary" style={{ backgroundColor: activeTab === 'SQL_HISTORY' ? '#D49B4B' : 'transparent', color: activeTab === 'SQL_HISTORY' ? '#141413' : '#F4F3EF', border: '1px solid #D49B4B' }} onClick={() => setActiveTab('SQL_HISTORY')}>Lịch Sử Thanh Toán</button>
           <button className="museum-btn-primary" style={{ backgroundColor: activeTab === 'ANALYTICS' ? '#D49B4B' : 'transparent', color: activeTab === 'ANALYTICS' ? '#141413' : '#F4F3EF', border: '1px solid #D49B4B' }} onClick={() => setActiveTab('ANALYTICS')}>Thống Kê</button>
         </div>
       </nav>
 
-      <main style={{ padding: '24px' }}>
+      {/* Khung chính căn giữa 1280px giúp tỷ lệ mọi tab đồng bộ và cân đối */}
+      <main style={{ maxWidth: '1280px', margin: '0 auto', padding: '24px' }}>
         {activeTab === 'EXHIBITS' && <ExhibitManagerView />}
         {activeTab === 'PASSES' && <PassManagementView passHistory={passHistory} setPassHistory={setPassHistory} onRevokePass={handleRevokePass} />}
         {activeTab === 'SQL_HISTORY' && <PaymentHistoryView />}
-        {activeTab === 'ANALYTICS' && (
-          <LiveAnalyticsView 
-             
-          />
-        )}
+        {activeTab === 'ANALYTICS' && <LiveAnalyticsView />}
       </main>
     </div>
   );

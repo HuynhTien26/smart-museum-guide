@@ -19,13 +19,12 @@ export const PaymentHistoryView: React.FC = () => {
 
   const fetchHistory = async () => {
     try {
-      const response = await fetch('http://localhost:3000/api/passes/history');
+      const response = await fetch(`http://${window.location.hostname}:3000/api/passes/history`);
       const data = await response.json();
       
       if (Array.isArray(data)) {
         setHistory(data);
       } else {
-        console.error('API không trả về danh sách hợp lệ. Lỗi từ Backend:', data);
         setHistory([]);
       }
     } catch (error) {
@@ -43,41 +42,41 @@ export const PaymentHistoryView: React.FC = () => {
   }, []);
 
   return (
-    <div className="museum-card" style={{ width: '100%' }}>
+    <div className="museum-card" style={{ width: '100%', boxSizing: 'border-box' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-        <h2 className="museum-section-title" style={{ margin: 0 }}>
-          📊 Lịch Sử Thanh Toán (Real-time từ SQL Server)
+        <h2 className="museum-section-title" style={{ margin: 0, borderBottom: 'none', paddingBottom: 0 }}>
+          📊 Lịch Sử Thanh Toán
         </h2>
         <button 
           onClick={fetchHistory} 
           className="museum-btn-primary" 
           style={{ padding: '8px 16px', width: 'auto', backgroundColor: '#3B82F6', color: '#fff' }}
         >
-          🔄 Tải Lại Dữ Liệu
+          🔄 Làm mới
         </button>
       </div>
 
       {isLoading ? (
-        <p style={{ color: '#fff' }}>Đang tải lịch sử từ SQL Server...</p>
+        <p style={{ color: '#fff' }}>Đang tải dữ liệu...</p>
       ) : (
         <div style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', color: '#fff' }}>
             <thead>
-              <tr style={{ backgroundColor: '#1E1E1C', textAlign: 'left' }}>
+              <tr style={{ backgroundColor: '#141413', textAlign: 'left' }}>
                 <th style={{ padding: '12px', borderBottom: '1px solid #333' }}>Mã Giao Dịch (PIN)</th>
                 <th style={{ padding: '12px', borderBottom: '1px solid #333' }}>Thời Gian Mua</th>
                 <th style={{ padding: '12px', borderBottom: '1px solid #333' }}>IP Người Mua</th>
                 <th style={{ padding: '12px', borderBottom: '1px solid #333' }}>Gói Vé</th>
-                <th style={{ padding: '12px', borderBottom: '1px solid #333' }}>Số Khách</th>
-                <th style={{ padding: '12px', borderBottom: '1px solid #333' }}>Giới Hạn Máy</th>
-                <th style={{ padding: '12px', borderBottom: '1px solid #333' }}>Thành Tiền</th>
+                <th style={{ padding: '12px', borderBottom: '1px solid #333', textAlign: 'center' }}>Số Khách</th>
+                <th style={{ padding: '12px', borderBottom: '1px solid #333', textAlign: 'center' }}>Giới Hạn Máy</th>
+                <th style={{ padding: '12px', borderBottom: '1px solid #333', textAlign: 'right' }}>Thành Tiền</th>
               </tr>
             </thead>
             <tbody>
               {history.length === 0 ? (
                 <tr>
-                  <td colSpan={7} style={{ padding: '16px', textAlign: 'center', color: '#9E9D96' }}>
-                    Chưa có lịch sử thanh toán nào trong SQL Server.
+                  <td colSpan={7} style={{ padding: '24px', textAlign: 'center', color: '#9E9D96' }}>
+                    Chưa có lịch sử giao dịch nào.
                   </td>
                 </tr>
               ) : (
@@ -91,7 +90,7 @@ export const PaymentHistoryView: React.FC = () => {
                     <td style={{ padding: '12px' }}>{row.PackageType || 'Vé Khách Lẻ'}</td>
                     <td style={{ padding: '12px', textAlign: 'center' }}>{row.ParticipantCount || 1}</td>
                     <td style={{ padding: '12px', textAlign: 'center' }}>{row.DeviceLimit || 1} máy</td>
-                    <td style={{ padding: '12px', color: '#2EBD85', fontWeight: 'bold' }}>
+                    <td style={{ padding: '12px', color: '#2EBD85', fontWeight: 'bold', textAlign: 'right' }}>
                       {Number(row.Amount || 0).toLocaleString('vi-VN')} đ
                     </td>
                   </tr>

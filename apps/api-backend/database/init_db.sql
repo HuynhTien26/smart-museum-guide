@@ -46,7 +46,21 @@ GO
 INSERT INTO SystemAnalytics (ID, LiveGuestCount, TotalListens) 
 VALUES (1, 0, 0);
 GO
+USE MuseumDB;
+GO
 
+-- TẠO BẢNG LƯU SỰ KIỆN THỐNG KÊ CHI TIẾT (UC-09, UC-10, UC-11)
+IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'AnalyticsEvents')
+BEGIN
+    CREATE TABLE AnalyticsEvents (
+        EventID INT IDENTITY(1,1) PRIMARY KEY,
+        EventType VARCHAR(50) NOT NULL,   -- 'LANGUAGE_CHANGE' | 'PLAY_START' | 'REPLAY_EVENT' | 'SEEK_BACKWARD'
+        ExhibitID VARCHAR(50) NULL,       -- Mã hiện vật (dùng cho UC-10, UC-11)
+        LangCode VARCHAR(10) NULL,        -- Mã ngôn ngữ: 'vi', 'en', 'fr', 'ja', 'ko' (dùng cho UC-09)
+        CreatedAt DATETIME DEFAULT GETDATE()
+    );
+END
+GO
 -- ==========================================
 -- CÁC CÂU LỆNH TRUY VẤN THƯỜNG DÙNG (BÔI ĐEN ĐỂ CHẠY KHI CẦN)
 -- ==========================================
