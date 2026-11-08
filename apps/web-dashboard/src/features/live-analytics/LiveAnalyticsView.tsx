@@ -37,7 +37,6 @@ const SUPPORTED_LANGUAGES = [
 export const LiveAnalyticsView: React.FC = () => {
   const [onlinePinUsers, setOnlinePinUsers] = useState<number>(0);
   const [liveGuests, setLiveGuests] = useState<number>(0);
-  const [summaryTotalListens, setSummaryTotalListens] = useState<number>(0);
 
   const [period, setPeriod] = useState<'all' | 'day' | 'week' | 'month'>('all');
   const [langStats, setLangStats] = useState<LangStat[]>([]);
@@ -62,7 +61,6 @@ export const LiveAnalyticsView: React.FC = () => {
       const summaryData = await summaryRes.json();
       if (summaryData.success) {
         setLiveGuests(summaryData.liveGuestCount || 0);
-        setSummaryTotalListens(summaryData.totalListens || 0);
       }
     } catch (err) {
       console.error('Lỗi đồng bộ trạng thái Online:', err);
@@ -100,7 +98,6 @@ export const LiveAnalyticsView: React.FC = () => {
     return () => clearInterval(interval);
   }, [fetchRealtimeSummary, fetchSqlAnalyticsReports]);
 
-  // Tính toán số liệu ngôn ngữ (Mặc định = 0 khi chưa có dữ liệu)
   const totalLangEvents = langStats.reduce((sum, item) => sum + Number(item.count || 0), 0);
   const mergedLanguages = SUPPORTED_LANGUAGES.map((lang) => {
     const found = langStats.find((s) => s.langCode?.toLowerCase() === lang.code);
@@ -111,14 +108,6 @@ export const LiveAnalyticsView: React.FC = () => {
 
   const topLanguage =
     totalLangEvents > 0 ? [...mergedLanguages].sort((a, b) => b.count - a.count)[0] : null;
-
-  // Tính tổng số lượt nghe và lượt nghe lại (Mặc định = 0, tự nhảy số khi có sự kiện)
-  const totalListenedCount =
-    mostListened.reduce((sum, item) => sum + Number(item.playCount || 0), 0) || summaryTotalListens;
-  const totalReplayedCount = mostReplayed.reduce(
-    (sum, item) => sum + Number(item.totalReplays || 0),
-    0
-  );
 
   const cardStyle: React.CSSProperties = {
     padding: '22px 24px',
@@ -237,7 +226,7 @@ export const LiveAnalyticsView: React.FC = () => {
         </div>
       )}
 
-      {/* HÀNG 1: ĐANG ONLINE & KHÁCH VÃNG LAI (2 KHUNG CÂN ĐỐI) */}
+      {/* HÀNG 1: ĐANG ONLINE & KHÁCH VÃNG LAI */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(380px, 1fr))', gap: '20px' }}>
         <div style={{ ...cardStyle, backgroundColor: '#1A1E1C', border: '1px solid #2EBD85' }}>
           <div style={{ color: '#2EBD85', fontWeight: 'bold', fontSize: '15px' }}>
@@ -260,7 +249,7 @@ export const LiveAnalyticsView: React.FC = () => {
         </div>
       </div>
 
-      {/* HÀNG 2: THỐNG KÊ NGÔN NGỮ THUYẾT MINH (5 Ô SỐ NHẢY CÂN ĐỐI) */}
+      {/* HÀNG 2: THỐNG KÊ NGÔN NGỮ THUYẾT MINH */}
       <div style={{ ...cardStyle, border: '1px solid #3B82F6', gap: '18px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
           <div>
@@ -342,17 +331,17 @@ export const LiveAnalyticsView: React.FC = () => {
         </div>
       </div>
 
-      {/* HÀNG 3: HIỆN VẬT NGHE NHIỀU NHẤT & NGHE LẠI NHIỀU NHẤT (2 KHUNG CÂN ĐỐI) */}
+      {/* HÀNG 3: HIỆN VẬT NGHE NHIỀU NHẤT & NGHE LẠI NHIỀU NHẤT (ĐÃ BỎ SỐ LỚN) */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(380px, 1fr))', gap: '20px' }}>
         {/* Khung Trái: Hiện Vật Được Nghe Nhiều Nhất */}
-        <div style={{ ...cardStyle, border: '1px solid #D49B4B', justifyContent: 'flex-start', gap: '12px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+        <div style={{ ...cardStyle, border: '1px solid #D49B4B', justifyContent: 'flex-start', gap: '16px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px' }}>
             <div>
               <h3 style={{ margin: 0, color: '#D49B4B', fontSize: '16px' }}>
                 🎧 Hiện Vật Được Nghe Nhiều Nhất
               </h3>
               <p style={{ margin: '4px 0 0 0', fontSize: '12.5px', color: '#9CA3AF' }}>
-                Tổng số lượt bấm nghe thuyết minh hiện vật
+                Xếp hạng theo tổng số lượt bấm phát thuyết minh
               </p>
             </div>
             {mostListened[0] && (
@@ -371,34 +360,32 @@ export const LiveAnalyticsView: React.FC = () => {
             )}
           </div>
 
-          <div style={{ ...bigNumberStyle, color: '#D49B4B' }}>{totalListenedCount}</div>
-
           {mostListened.length === 0 ? (
-            <div style={{ fontSize: '12.5px', color: '#9CA3AF' }}>
-              Số liệu sẽ tự động tăng ngay khi khách bấm nghe thuyết minh trên thiết bị.
+            <div style={{ padding: '20px', textAlign: 'center', fontSize: '13px', color: '#9CA3AF', backgroundColor: '#141413', borderRadius: '8px' }}>
+              Chưa có lượt nghe hiện vật nào được ghi nhận.
             </div>
           ) : (
-            <div style={{ overflowX: 'auto', marginTop: '4px' }}>
+            <div style={{ overflowX: 'auto' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
                 <thead>
                   <tr style={{ backgroundColor: '#141413', color: '#D49B4B', textAlign: 'left' }}>
-                    <th style={{ padding: '9px' }}>Hạng</th>
-                    <th style={{ padding: '9px' }}>Mã</th>
-                    <th style={{ padding: '9px' }}>Tên Hiện Vật</th>
-                    <th style={{ padding: '9px' }}>Khu</th>
-                    <th style={{ padding: '9px', textAlign: 'right' }}>Lượt Nghe</th>
+                    <th style={{ padding: '10px' }}>Hạng</th>
+                    <th style={{ padding: '10px' }}>Mã</th>
+                    <th style={{ padding: '10px' }}>Tên Hiện Vật</th>
+                    <th style={{ padding: '10px' }}>Khu</th>
+                    <th style={{ padding: '10px', textAlign: 'right' }}>Lượt Nghe</th>
                   </tr>
                 </thead>
                 <tbody>
                   {mostListened.map((item, idx) => (
                     <tr key={item.exhibitId} style={{ borderBottom: '1px solid #2D2D2A' }}>
-                      <td style={{ padding: '9px', fontWeight: 'bold', color: idx === 0 ? '#F59E0B' : '#9CA3AF' }}>
+                      <td style={{ padding: '10px', fontWeight: 'bold', color: idx === 0 ? '#F59E0B' : '#9CA3AF' }}>
                         #{idx + 1}
                       </td>
-                      <td style={{ padding: '9px', color: '#60A5FA' }}>#{item.exhibitId}</td>
-                      <td style={{ padding: '9px', fontWeight: 'bold', color: '#F4F3EF' }}>{item.exhibitName}</td>
-                      <td style={{ padding: '9px', color: '#9CA3AF' }}>Khu {item.zoneCode}</td>
-                      <td style={{ padding: '9px', textAlign: 'right', fontWeight: 'bold', color: '#2EBD85' }}>
+                      <td style={{ padding: '10px', color: '#60A5FA' }}>#{item.exhibitId}</td>
+                      <td style={{ padding: '10px', fontWeight: 'bold', color: '#F4F3EF' }}>{item.exhibitName}</td>
+                      <td style={{ padding: '10px', color: '#9CA3AF' }}>Khu {item.zoneCode}</td>
+                      <td style={{ padding: '10px', textAlign: 'right', fontWeight: 'bold', color: '#2EBD85' }}>
                         {item.playCount}
                       </td>
                     </tr>
@@ -410,14 +397,14 @@ export const LiveAnalyticsView: React.FC = () => {
         </div>
 
         {/* Khung Phải: Hiện Vật Được Nghe Lại / Tua Lùi Nhiều Nhất */}
-        <div style={{ ...cardStyle, border: '1px solid #A855F7', justifyContent: 'flex-start', gap: '12px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+        <div style={{ ...cardStyle, border: '1px solid #A855F7', justifyContent: 'flex-start', gap: '16px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px' }}>
             <div>
               <h3 style={{ margin: 0, color: '#C084FC', fontSize: '16px' }}>
                 🔁 Hiện Vật Được Nghe Lại / Tua Lùi
               </h3>
               <p style={{ margin: '4px 0 0 0', fontSize: '12.5px', color: '#9CA3AF' }}>
-                Tổng số lượt phát lại từ đầu và tua lùi âm thanh
+                Xếp hạng theo số lượt phát lại từ đầu và tua lùi âm thanh
               </p>
             </div>
             {mostReplayed[0] && (
@@ -436,34 +423,32 @@ export const LiveAnalyticsView: React.FC = () => {
             )}
           </div>
 
-          <div style={{ ...bigNumberStyle, color: '#C084FC' }}>{totalReplayedCount}</div>
-
           {mostReplayed.length === 0 ? (
-            <div style={{ fontSize: '12.5px', color: '#9CA3AF' }}>
-              Số liệu sẽ tự động tăng khi khách bấm nghe lại hoặc tua lùi đoạn thuyết minh.
+            <div style={{ padding: '20px', textAlign: 'center', fontSize: '13px', color: '#9CA3AF', backgroundColor: '#141413', borderRadius: '8px' }}>
+              Chưa có lượt nghe lại hoặc tua lùi nào được ghi nhận.
             </div>
           ) : (
-            <div style={{ overflowX: 'auto', marginTop: '4px' }}>
+            <div style={{ overflowX: 'auto' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
                 <thead>
                   <tr style={{ backgroundColor: '#141413', color: '#C084FC', textAlign: 'left' }}>
-                    <th style={{ padding: '9px' }}>Hạng</th>
-                    <th style={{ padding: '9px' }}>Hiện Vật</th>
-                    <th style={{ padding: '9px', textAlign: 'center' }}>Nghe Lại</th>
-                    <th style={{ padding: '9px', textAlign: 'center' }}>Tua Lùi</th>
-                    <th style={{ padding: '9px', textAlign: 'right' }}>Tổng</th>
+                    <th style={{ padding: '10px' }}>Hạng</th>
+                    <th style={{ padding: '10px' }}>Hiện Vật</th>
+                    <th style={{ padding: '10px', textAlign: 'center' }}>Nghe Lại</th>
+                    <th style={{ padding: '10px', textAlign: 'center' }}>Tua Lùi</th>
+                    <th style={{ padding: '10px', textAlign: 'right' }}>Tổng</th>
                   </tr>
                 </thead>
                 <tbody>
                   {mostReplayed.map((item, idx) => (
                     <tr key={item.exhibitId} style={{ borderBottom: '1px solid #2D2D2A' }}>
-                      <td style={{ padding: '9px', fontWeight: 'bold', color: idx === 0 ? '#F59E0B' : '#9CA3AF' }}>
+                      <td style={{ padding: '10px', fontWeight: 'bold', color: idx === 0 ? '#F59E0B' : '#9CA3AF' }}>
                         #{idx + 1}
                       </td>
-                      <td style={{ padding: '9px', fontWeight: 'bold', color: '#F4F3EF' }}>{item.exhibitName}</td>
-                      <td style={{ padding: '9px', textAlign: 'center', color: '#60A5FA' }}>{item.replayCount}</td>
-                      <td style={{ padding: '9px', textAlign: 'center', color: '#F59E0B' }}>{item.seekBackwardCount}</td>
-                      <td style={{ padding: '9px', textAlign: 'right', fontWeight: 'bold', color: '#C084FC' }}>
+                      <td style={{ padding: '10px', fontWeight: 'bold', color: '#F4F3EF' }}>{item.exhibitName}</td>
+                      <td style={{ padding: '10px', textAlign: 'center', color: '#60A5FA' }}>{item.replayCount}</td>
+                      <td style={{ padding: '10px', textAlign: 'center', color: '#F59E0B' }}>{item.seekBackwardCount}</td>
+                      <td style={{ padding: '10px', textAlign: 'right', fontWeight: 'bold', color: '#C084FC' }}>
                         {item.totalReplays}
                       </td>
                     </tr>
