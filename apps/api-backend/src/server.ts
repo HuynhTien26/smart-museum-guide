@@ -294,6 +294,10 @@ app.post('/api/analytics/event', async (req: Request, res: Response) => {
       await pool.request()
         .input('ExhibitID', sql.VarChar(50), exhibitId)
         .query(`UPDATE Exhibits SET ListenCount = ISNULL(ListenCount, 0) + 1 WHERE ExhibitID = @ExhibitID`);
+
+      // Cộng dồn tổng lượt nghe để /api/analytics/summary trả về đúng số liệu
+      await pool.request()
+        .query(`UPDATE SystemAnalytics SET TotalListens = ISNULL(TotalListens, 0) + 1 WHERE ID = 1`);
     }
 
     res.json({ success: true });
@@ -370,6 +374,35 @@ app.get('/api/analytics/reports', async (req: Request, res: Response) => {
   } catch (err) {
     console.error('Lỗi truy vấn báo cáo thống kê SQL:', err);
     res.status(500).json({ success: false, message: 'Không tải được dữ liệu thống kê từ SQL Server' });
+  }
+});
+
+// 3. Thống kê tổng quan cho Dashboard (khách vãng lai, tổng lượt nghe, thiết bị đang online)
+app.get('/api/analytics/summary', async (_req: Request, res: Response) => {
+  try {
+    const pool = await sql.connect(dbConfig);
+
+    const sysResult = await pool.request().query(`SELECT LiveGuestCount, TotalListens FROM SystemAnalytics WHERE ID = 1`);
+    const sysData = sysResult.recordset[0] || { LiveGuestCount: 0, TotalListens: 0 };
+
+    const onlineResult = await pool.request().query(`
+      SELECT ISNULL(SUM(UsedDevices), 0) AS TotalOnline
+      FROM PassHistory
+      WHERE Status = 'Active'
+      AND ActivationDate IS NOT NULL
+      AND GETDATE() <= DATEADD(hour, 24, ActivationDate)
+    `);
+    const totalOnline = onlineResult.recordset[0]?.TotalOnline ?? 0;
+
+    res.json({
+      success: true,
+      liveGuestCount: sysData.LiveGuestCount,
+      totalListens: sysData.TotalListens,
+      totalOnline: totalOnline
+    });
+  } catch (error) {
+    console.error('Lỗi lấy thống kê SQL:', error);
+    res.status(500).json({ success: false });
   }
 });
 

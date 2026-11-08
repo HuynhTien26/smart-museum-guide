@@ -38,7 +38,7 @@ export const LiveAnalyticsView: React.FC = () => {
   const [onlinePinUsers, setOnlinePinUsers] = useState<number>(0);
   const [liveGuests, setLiveGuests] = useState<number>(0);
 
-  const [period, setPeriod] = useState<'all' | 'day' | 'week' | 'month'>('all');
+  const [period, setPeriod] = useState<'all' | 'day' | 'week' >('all');
   const [langStats, setLangStats] = useState<LangStat[]>([]);
   const [mostListened, setMostListened] = useState<MostListenedItem[]>([]);
   const [mostReplayed, setMostReplayed] = useState<MostReplayedItem[]>([]);
@@ -155,7 +155,6 @@ export const LiveAnalyticsView: React.FC = () => {
             { key: 'all', label: 'Tất cả' },
             { key: 'day', label: 'Hôm nay (24h)' },
             { key: 'week', label: '7 ngày qua' },
-            { key: 'month', label: '30 ngày qua' },
           ].map((item) => (
             <button
               key={item.key}

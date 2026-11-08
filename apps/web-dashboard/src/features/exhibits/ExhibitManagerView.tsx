@@ -12,8 +12,7 @@ const AVAILABLE_LANGUAGES = [
   { code: 'en', name: 'Tiếng Anh' },
   { code: 'fr', name: 'Tiếng Pháp' },
   { code: 'ja', name: 'Tiếng Nhật' },
-  { code: 'ko', name: 'Tiếng Hàn' },
-  { code: 'zh', name: 'Tiếng Trung' }
+  { code: 'ko', name: 'Tiếng Hàn' }
 ];
 
 interface TranslationItem {
