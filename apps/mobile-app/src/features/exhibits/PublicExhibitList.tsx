@@ -561,7 +561,7 @@ const I18N: Record<LangKey, any> = {
 };
 
 const PROTOTYPE_TRANSLATIONS: Record<string, any> = {
-  '104': {
+  /*'104': {
     titles: { vi: 'Máy bay trực thăng UH-1 "Huey"', en: 'Bell UH-1H "Huey" Helicopter' },
     transcripts: {
       vi: 'Bạn đang đứng trước chiếc trực thăng Bell UH-1H mang số hiệu 69-15139. Được mệnh danh là "Huey", đây là biểu tượng của chiến thuật Trực thăng vận. Máy bay được trang bị động cơ phản lực cánh quạt cùng hai súng máy M60 hai bên hông. Trong giai đoạn 1965 – 1975, dòng UH-1 chuyên dùng để đổ bộ binh lính và yểm trợ hỏa lực. Hiện vật nguyên bản này được thu giữ vào tháng 4 năm 1975. Ngày nay, hiện vật là chứng tích lịch sử nhắc nhở về giá trị của nền hòa bình.',
@@ -574,8 +574,8 @@ const PROTOTYPE_TRANSLATIONS: Record<string, any> = {
       vi: 'Chuồng Cọp là khu biệt giam bí mật khắc nghiệt nhất tại hệ thống nhà tù Côn Đảo. Mỗi buồng giam bằng đá chỉ rộng vỏn vẹn khoảng 5 mét vuông. Phía trên không có trần bê tông mà thay bằng những chấn song sắt kiên cố. Cai ngục đi lại dọc hành lang phía trên để giám sát người tù 24/24 giờ. Từ trên song sắt, vôi bột và nước lạnh thường bị dội thẳng xuống bên dưới. Năm 1970, những bức ảnh chụp Chuồng Cọp được công bố đã làm chấn động lương tri thế giới.',
       en: 'The "Tiger Cages" were the most secretive solitary cells on Con Son Island. Each stone cell measured barely five square meters in area. Instead of a solid ceiling, heavy iron bars were installed overhead. Guards walked along elevated catwalks above the bars to watch prisoners day and night. Quicklime powder and cold water were thrown down from above onto inmates. When photographs of these cells reached the world in 1970, they sparked global outrage.'
     }
-  }
-};
+  }*/
+}; 
 
 function formatSeconds(sec: number): string {
   const safeSec = Math.max(0, Math.floor(sec || 0));

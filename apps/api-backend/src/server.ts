@@ -1,5 +1,6 @@
 /**
  * apps/api-backend/src/server.ts
+ * Cổng API & WebSocket xử lý các yêu cầu từ Mobile App và Web Dashboard
  */
 dotenv.config();
 import express, { Request, Response } from 'express';
@@ -29,6 +30,7 @@ const dbConfig: sql.config = {
 };
 
 const server = http.createServer(app);
+// [UC-08 - Bước 2] Khởi tạo máy chủ WebSocket thời gian thực
 const io = new Server(server, {
   cors: {
     origin: "*", 
@@ -42,6 +44,7 @@ app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 // ==========================================
 // HÀM PHỤ TRỢ: LƯU SỐ KHÁCH VÃNG LAI VÀO SQL
+// [UC-08 - Bước 4] Cập nhật số lượng khách vãng lai đang kết nối vào bảng SystemAnalytics
 // ==========================================
 async function updateSQLGuestCount(count: number) {
   try {
@@ -56,11 +59,13 @@ async function updateSQLGuestCount(count: number) {
 
 // ==========================================
 // WEBSOCKET: QUẢN LÝ ONLINE VÀ KHÁCH VÃNG LAI
+// [UC-08 - Bước 2, 3, 4, 5] Kết nối kênh WebSocket, nhận trạng thái phiên và tự động phát tín hiệu cập nhật
 // ==========================================
 io.on('connection', (socket) => {
   socket.data.role = socket.handshake.query.role || 'ADMIN';
   socket.data.tabId = socket.handshake.query.tabId || socket.id;
 
+  // [UC-08 - Bước 4 & Bước 5] Tổng hợp số phiên khách đang mở ứng dụng và phát sự kiện UPDATE_CONNECTIONS
   const broadcastGuestCount = () => {
     const uniqueGuests = new Set<string>();
     io.sockets.sockets.forEach((s) => {
@@ -75,12 +80,14 @@ io.on('connection', (socket) => {
 
   broadcastGuestCount();
 
+  // [UC-08 - Bước 3] Nhận tín hiệu cập nhật vai trò/phiên từ thiết bị khách tham quan
   socket.on('UPDATE_ROLE', (data: { role: string; tabId?: string }) => {
     socket.data.role = data.role;
     if (data.tabId) socket.data.tabId = data.tabId;
     broadcastGuestCount();
   });
 
+  // [UC-08 - Bước 5] Tự động tính lại số người dùng trực tiếp khi có thiết bị ngắt kết nối
   socket.on('disconnect', () => {
     broadcastGuestCount();
   });
@@ -105,6 +112,7 @@ app.get('/api/health', (_req: Request, res: Response) => {
   res.json({ status: 'OK', message: 'API Backend đang hoạt động!' });
 });
 
+// [UC-08 & UC-15] Lấy lịch sử mã vé và số thiết bị đang kết nối
 app.get('/api/passes/history', async (_req: Request, res: Response) => {
   try {
     const history = await passDao.getAllPassHistory();
@@ -123,6 +131,7 @@ app.get('/api/statistics/payments', async (_req: Request, res: Response) => {
   }
 });
 
+// [UC-12 - Bước 2] & [UC-14 - Bước 2] API lấy danh sách hiện vật từ SQL Server
 app.get('/api/exhibits', async (_req: Request, res: Response) => {
   try {
     const data = await exhibitBus.getPublicExhibits();
@@ -132,15 +141,18 @@ app.get('/api/exhibits', async (_req: Request, res: Response) => {
   }
 });
 
+// [UC-12 - Bước 7 & Bước 8] API Thêm mới hồ sơ hiện vật và nội dung đa ngôn ngữ
 app.post('/api/exhibits', async (req: Request, res: Response) => {
   try {
     await exhibitBus.createExhibit(req.body);
     res.status(201).json({ success: true, message: 'Đã thêm hiện vật' });
   } catch (error) {
+    // [UC-12 - Luồng ngoại lệ E3] Báo lỗi khi thêm hiện vật thất bại
     res.status(500).json({ error: 'Lỗi server khi thêm hiện vật' });
   }
 });
 
+// [UC-12 - Luồng thay thế A2] API Xóa toàn bộ hiện vật
 app.delete('/api/exhibits/all', async (_req: Request, res: Response) => {
   try {
     await exhibitBus.deleteAllExhibits();
@@ -150,24 +162,29 @@ app.delete('/api/exhibits/all', async (_req: Request, res: Response) => {
   }
 });
 
+// [UC-12 - Luồng thay thế A1] API Chỉnh sửa cập nhật thông tin hiện vật theo mã định danh
 app.put('/api/exhibits/:id', async (req: Request, res: Response) => {
   try {
     await exhibitBus.updateExhibit(req.params.id as string, req.body);
     res.json({ success: true, message: 'Đã cập nhật hiện vật' });
   } catch (error) {
+    // [UC-12 - Luồng ngoại lệ E3] Báo lỗi khi sửa hiện vật thất bại
     res.status(500).json({ error: 'Lỗi server khi sửa hiện vật' });
   }
 });
 
+// [UC-12 - Luồng thay thế A2] API Xóa một hồ sơ hiện vật theo mã định danh
 app.delete('/api/exhibits/:id', async (req: Request, res: Response) => {
   try {
     await exhibitBus.deleteExhibit(req.params.id as string);
     res.json({ success: true, message: 'Đã xóa hiện vật' });
   } catch (error) {
+    // [UC-12 - Luồng ngoại lệ E3] Báo lỗi khi xóa hiện vật thất bại
     res.status(500).json({ error: 'Lỗi server khi xóa hiện vật' });
   }
 });
 
+// [UC-15 - Bước 6 & Bước 7] API tạo mã PIN 6 ký tự và lưu thông tin mua vé
 app.post('/api/passes/buy', async (req: Request, res: Response) => {
   try {
     const passId = req.body?.passId || generateRandomPin();
@@ -186,6 +203,7 @@ app.post('/api/passes/buy', async (req: Request, res: Response) => {
   }
 });
 
+// [UC-15 - Bước 9 & Luồng ngoại lệ E4] API xác thực mã PIN và kích hoạt quyền sử dụng 24 giờ
 app.post('/api/passes/verify', async (req: Request, res: Response) => {
   try {
     const { passId } = req.body;
@@ -206,6 +224,7 @@ app.post('/api/passes/verify', async (req: Request, res: Response) => {
   }
 });
 
+// [UC-08 - Bước 3] Nhận tín hiệu heartbeat duy trì trạng thái phiên hoạt động của mã PIN
 app.post('/api/passes/keepalive', async (req: Request, res: Response) => {
   try {
     const { passId } = req.body;
@@ -229,6 +248,7 @@ app.post('/api/passes/keepalive', async (req: Request, res: Response) => {
   }
 });
 
+// [UC-08 - Bước 5] Giải phóng thiết bị khi khách đăng xuất hoặc đóng phiên
 app.post('/api/passes/release', async (req: Request, res: Response) => {
   try {
     const { passId, immediate } = req.body;
@@ -275,7 +295,7 @@ app.put('/api/passes/:id/revoke', async (req: Request, res: Response) => {
 // CÁC API THỐNG KÊ MỚI (UC-09, UC-10, UC-11)
 // ==========================================
 
-// 1. Ghi nhận sự kiện hành vi từ Mobile App xuống SQL
+// [UC-01 - Bước 5], [UC-05 - Bước 5], [UC-09, UC-10, UC-11] 1. Ghi nhận sự kiện hành vi từ Mobile App xuống SQL
 app.post('/api/analytics/event', async (req: Request, res: Response) => {
   const { eventType, exhibitId, langCode } = req.body;
   try {
@@ -309,6 +329,7 @@ app.post('/api/analytics/event', async (req: Request, res: Response) => {
 
 // 2. Truy vấn và tổng hợp báo cáo cho Dashboard (UC-09, UC-10, UC-11)
 app.get('/api/analytics/reports', async (req: Request, res: Response) => {
+  // [UC-09, UC-10, UC-11 - Luồng thay thế A1] Lọc kết quả thống kê theo ngày, tuần hoặc tháng
   const period = (req.query.period as string) || 'all';
   let dateCondition = '';
 
@@ -323,7 +344,7 @@ app.get('/api/analytics/reports', async (req: Request, res: Response) => {
   try {
     const pool = await sql.connect(dbConfig);
 
-    // UC-09: Thống kê ngôn ngữ phổ biến
+    // [UC-09 - Bước 2 & Bước 3] Truy vấn sự kiện chọn/đổi ngôn ngữ và tổng hợp số lượt theo từng ngôn ngữ
     const langResult = await pool.request().query(`
       SELECT LOWER(LangCode) AS langCode, COUNT(*) AS count
       FROM AnalyticsEvents
@@ -333,7 +354,7 @@ app.get('/api/analytics/reports', async (req: Request, res: Response) => {
       ORDER BY count DESC
     `);
 
-    // UC-10: Thống kê hiện vật được nghe nhiều nhất
+    // [UC-10 - Bước 2, 3, 4] Truy vấn sự kiện PLAY_START, nhóm đếm theo từng hiện vật và sắp xếp giảm dần
     const mostListenedResult = await pool.request().query(`
       SELECT 
         ev.ExhibitID AS exhibitId,
@@ -348,7 +369,7 @@ app.get('/api/analytics/reports', async (req: Request, res: Response) => {
       ORDER BY playCount DESC
     `);
 
-    // UC-11: Thống kê hiện vật được nghe lại / tua lùi nhiều nhất
+    // [UC-11 - Bước 2, 3, 4] Truy vấn sự kiện REPLAY_EVENT & SEEK_BACKWARD, tổng hợp và sắp xếp thứ hạng nghe lại
     const mostReplayedResult = await pool.request().query(`
       SELECT 
         ev.ExhibitID AS exhibitId,
@@ -372,12 +393,13 @@ app.get('/api/analytics/reports', async (req: Request, res: Response) => {
       mostReplayed: mostReplayedResult.recordset
     });
   } catch (err) {
+    // [UC-09, UC-10, UC-11 - Luồng ngoại lệ E1] Trả về thông báo lỗi khi truy vấn thống kê thất bại
     console.error('Lỗi truy vấn báo cáo thống kê SQL:', err);
     res.status(500).json({ success: false, message: 'Không tải được dữ liệu thống kê từ SQL Server' });
   }
 });
 
-// 3. Thống kê tổng quan cho Dashboard (khách vãng lai, tổng lượt nghe, thiết bị đang online)
+// [UC-08 - Bước 4] 3. Thống kê tổng quan cho Dashboard (khách vãng lai, tổng lượt nghe, thiết bị đang online)
 app.get('/api/analytics/summary', async (_req: Request, res: Response) => {
   try {
     const pool = await sql.connect(dbConfig);
@@ -408,6 +430,7 @@ app.get('/api/analytics/summary', async (_req: Request, res: Response) => {
 
 // ==========================================
 // KHỞI TẠO VÀ ĐỒNG BỘ CẤU TRÚC BẢNG SQL KHI KHỞI ĐỘNG
+// [UC-08, UC-09, UC-10, UC-11, UC-12] Đảm bảo các bảng dữ liệu sẵn sàng trên SQL Server
 // ==========================================
 async function checkAndInitSQL() {
   try {

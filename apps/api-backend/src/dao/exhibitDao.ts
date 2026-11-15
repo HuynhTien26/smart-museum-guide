@@ -1,3 +1,7 @@
+/**
+ * apps/api-backend/src/dao/exhibitDao.ts
+ * Tầng truy xuất dữ liệu (DAO) hiện vật cho [UC-12]
+ */
 import sql from 'mssql';
 
 const dbConfig: sql.config = {
@@ -13,7 +17,7 @@ const dbConfig: sql.config = {
 };
 
 export const exhibitDao = {
-  // Hàm cũ của bạn: Lấy toàn bộ dữ liệu
+  // [UC-12 - Bước 2] Truy vấn lấy toàn bộ danh sách hiện vật từ bảng Exhibits
   getAllExhibits: async () => {
     const pool = await sql.connect(dbConfig);
     const result = await pool.request().query('SELECT * FROM Exhibits');
@@ -21,7 +25,7 @@ export const exhibitDao = {
   },
 
   // --- 3 HÀM MỚI BỔ SUNG ---
- // Đảm bảo trong createExhibit và updateExhibit có truyền AudioBase64_VI:
+ // [UC-12 - Bước 7] Thực thi câu lệnh INSERT lưu hồ sơ hiện vật mới và nội dung đa ngôn ngữ vào SQL Server
 createExhibit: async (exhibit: any) => {
   const pool = await sql.connect(dbConfig);
   await pool.request()
@@ -39,6 +43,7 @@ createExhibit: async (exhibit: any) => {
   return { success: true };
 },
 
+// [UC-12 - Luồng thay thế A1 (Bước 3 & Bước 4)] Thực thi câu lệnh UPDATE cập nhật hiện vật, giữ nguyên ExhibitID và mã QR
 updateExhibit: async (id: string, exhibit: any) => {
   const pool = await sql.connect(dbConfig);
   await pool.request()
@@ -62,12 +67,13 @@ updateExhibit: async (id: string, exhibit: any) => {
   return { success: true };
 },
 
-// HÀM MỚI: Xóa toàn bộ hiện vật trong bảng Exhibits
+// [UC-12 - Luồng thay thế A2] HÀM MỚI: Xóa toàn bộ hiện vật trong bảng Exhibits
 deleteAllExhibits: async () => {
   const pool = await sql.connect(dbConfig);
   await pool.request().query(`DELETE FROM Exhibits`);
   return { success: true };
 },
+  // [UC-12 - Luồng thay thế A2 (Bước 4)] Thực thi câu lệnh DELETE xóa hồ sơ hiện vật theo ExhibitID
   deleteExhibit: async (id: string) => {
     const pool = await sql.connect(dbConfig);
     await pool.request()

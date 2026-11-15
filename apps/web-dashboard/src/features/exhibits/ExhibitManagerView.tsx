@@ -1,5 +1,6 @@
 /**
  * apps/web-dashboard/src/features/exhibits/ExhibitManagerView.tsx
+ * PHỤ TRÁCH: Thành viên 1 - [UC-12] Quản lý thông tin hiện vật & [UC-13] Khởi tạo và xuất bản in mã QR
  */
 import React, { useState, useEffect, useRef } from 'react';
 // @ts-ignore
@@ -24,26 +25,27 @@ interface TranslationItem {
 }
 
 export const ExhibitManagerView: React.FC = () => {
+  // [UC-12 - Bước 2] State lưu danh sách hiện vật hiển thị trên bảng quản lý
   const [exhibits, setExhibits] = useState<Exhibit[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  // States Form [UC-12]
+  // [UC-12 - Bước 4 & Bước 5] States quản lý biểu mẫu nhập thông tin hiện vật
   const [isEditing, setIsEditing] = useState(false);
   const [isZoneAudio, setIsZoneAudio] = useState(false);
   const [code, setCode] = useState('');
   const [zoneCode, setZoneCode] = useState(1);
   const [imageBase64, setImageBase64] = useState('');
-  // [UC-13] State lưu chuỗi URL để khởi tạo mã QR
+  // [UC-13 - Bước 4 & Bước 5] State lưu chuỗi URL định danh để khởi tạo và xem trước mã QR liên kết hiện vật
   const [savedQR, setSavedQR] = useState<string | null>(null);
 
-  // State Đa ngôn ngữ (Mặc định có Tiếng Việt kèm trường title lưu Tên hiện vật) [UC-12]
+  // [UC-12 - Bước 5] State Đa ngôn ngữ (Mặc định có Tiếng Việt kèm trường title lưu Tên hiện vật)
   const [translations, setTranslations] = useState<TranslationItem[]>([
     { langCode: 'vi', langName: 'Tiếng Việt', title: '', content: '', audioBase64: '' }
   ]);
 
   const imageInputRef = useRef<HTMLInputElement>(null);
 
-  // [UC-12] Load danh sách hiện vật từ SQL Server
+  // [UC-12 - Bước 1 & Bước 2] Load danh sách hiện vật từ SQL Server khi truy cập chức năng quản lý
   const fetchExhibits = async () => {
     setIsLoading(true);
     try {
@@ -51,6 +53,7 @@ export const ExhibitManagerView: React.FC = () => {
       const data = await response.json();
       setExhibits(data);
     } catch (error) {
+      // [UC-12 - Luồng ngoại lệ E3] Lỗi kết nối khi tải danh sách hiện vật
       console.error('Lỗi tải danh sách:', error);
     } finally {
       setIsLoading(false);
@@ -65,6 +68,7 @@ export const ExhibitManagerView: React.FC = () => {
     }
   }, [zoneCode, isZoneAudio, isEditing]);
 
+  // [UC-12 - Bước 3 & Bước 4] Chuyển đổi chế độ nhập Hiện vật lẻ hoặc Âm thanh Khu vực
   const handleZoneAudioToggle = (checked: boolean) => {
     setIsZoneAudio(checked);
     if (checked) {
@@ -75,10 +79,11 @@ export const ExhibitManagerView: React.FC = () => {
     }
   };
 
-  // [UC-12] Xử lý Upload Hình Ảnh (Giới hạn Max 5MB)
+  // [UC-12 - Bước 5 & Luồng ngoại lệ E2] Xử lý Upload Hình Ảnh & kiểm tra tệp hợp lệ (Giới hạn Max 5MB)
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    // [UC-12 - Luồng ngoại lệ E2] File hình ảnh vượt quá dung lượng cho phép -> Thông báo và cho phép tải lại
     if (file.size > 5 * 1024 * 1024) {
       alert('File ảnh phải nhỏ hơn 5MB.');
       if (imageInputRef.current) imageInputRef.current.value = '';
@@ -94,7 +99,7 @@ export const ExhibitManagerView: React.FC = () => {
     if (imageInputRef.current) imageInputRef.current.value = '';
   };
 
-  // [UC-12] Quản lý form Đa ngôn ngữ (Thêm/Xóa/Sửa title & content)
+  // [UC-12 - Bước 5] Quản lý form Đa ngôn ngữ (Thêm/Xóa/Sửa title & content theo từng ngôn ngữ)
   const handleAddLanguage = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const selectedCode = e.target.value;
     if (!selectedCode) return;
@@ -121,9 +126,11 @@ export const ExhibitManagerView: React.FC = () => {
     setTranslations(translations.map(t => t.langCode === langCode ? { ...t, content } : t));
   };
 
+  // [UC-12 - Bước 5 & Luồng ngoại lệ E2] Tải lên file âm thanh thuyết minh theo ngôn ngữ (Max 5MB)
   const handleAudioUpload = (e: React.ChangeEvent<HTMLInputElement>, langCode: string) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    // [UC-12 - Luồng ngoại lệ E2] File âm thanh không hợp lệ (quá 5MB) -> Thông báo và yêu cầu chọn lại
     if (file.size > 5 * 1024 * 1024) {
       alert('File audio phải nhỏ hơn 5MB.');
       e.target.value = '';
@@ -142,9 +149,10 @@ export const ExhibitManagerView: React.FC = () => {
     if (audioInput) audioInput.value = '';
   };
 
-  // [UC-12] Lưu, cập nhật hoặc Thêm mới Hiện vật vào CSDL
+  // [UC-12 - Bước 6, 7, 8] & [UC-13 - Bước 3, 4] Kiểm tra tính hợp lệ, lưu Hiện vật vào CSDL và khởi tạo liên kết QR
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
+    // [UC-12 - Luồng ngoại lệ E1] & [UC-13 - Luồng ngoại lệ E1] Kiểm tra thiếu mã định danh bắt buộc
     if (!code) return alert('Vui lòng nhập Mã (ID) hiện vật!');
 
     const viTrans = translations.find(t => t.langCode === 'vi');
@@ -156,6 +164,7 @@ export const ExhibitManagerView: React.FC = () => {
       : `Hiện vật ${code}`;
     const finalExhibitName = (!isZoneAudio && viTrans?.title?.trim()) ? viTrans.title.trim() : autoName;
 
+    // [UC-12 - Bước 7] Đóng gói dữ liệu hiện vật và JSON đa ngôn ngữ gửi xuống API Backend
     const payload = {
       ExhibitID: code,
       ZoneCode: zoneCode,
@@ -167,23 +176,28 @@ export const ExhibitManagerView: React.FC = () => {
     };
 
     try {
+      // [UC-12 - Bước 7 & Luồng A1] Phân nhánh gọi POST (Thêm mới) hoặc PUT (Chỉnh sửa hiện vật đã có)
       const method = isEditing ? 'PUT' : 'POST';
       const url = isEditing ? `http://localhost:3000/api/exhibits/${code}` : `http://localhost:3000/api/exhibits`;
       const response = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
 
       if (response.ok) {
+        // [UC-12 - Bước 8] Thông báo lưu thành công và cập nhật lại danh sách hiện vật
         alert(isEditing ? 'Cập nhật thành công!' : 'Thêm dữ liệu thành công!');
+        // [UC-13 - Bước 4 & Bước 5] Tạo đường dẫn mã QR liên kết với mã định danh hiện vật để hiển thị bản xem trước
         setSavedQR(`${window.location.origin}/?exhibit=${code}`);
         fetchExhibits();
       } else {
+        // [UC-12 - Luồng ngoại lệ E1 & E3] Thông báo lưu/sửa thất bại (trùng mã hoặc lỗi dữ liệu)
         alert('Lưu thất bại!');
       }
     } catch (error) {
+      // [UC-12 - Luồng ngoại lệ E3] Lỗi kết nối máy chủ khi thực hiện lưu
       alert('Lỗi kết nối Server.');
     }
   };
 
-  // [UC-13] Tải ảnh mã QR Code về máy để mang đi in ấn
+  // [UC-13 - Bước 6 & Bước 7] Xuất bản in: Tạo và tải tệp hình ảnh mã QR (.png) về máy để in ấn và dán tại hiện vật
   const handleDownloadQR = async () => {
     if (!savedQR) return;
     try {
@@ -199,10 +213,12 @@ export const ExhibitManagerView: React.FC = () => {
       document.body.removeChild(link);
       URL.revokeObjectURL(objectUrl);
     } catch (error) {
+      // [UC-13 - Luồng ngoại lệ E2 & E3] Thông báo lỗi khi không thể tạo hoặc xuất tệp ảnh mã QR
       alert('Không thể tải mã QR.');
     }
   };
 
+  // [UC-12 - Bước 3] Làm mới biểu mẫu để chuyển về chế độ Thêm hiện vật mới
   const handleResetForm = () => {
     setIsEditing(false); 
     setCode(isZoneAudio ? `KHU-${zoneCode}` : ''); 
@@ -217,7 +233,7 @@ export const ExhibitManagerView: React.FC = () => {
     });
   };
 
-  // [UC-12] Luồng A1: Kéo dữ liệu của hiện vật lên Form để Chỉnh Sửa
+  // [UC-12 - Luồng thay thế A1 (Bước 1 & Bước 2)] Chọn hiện vật cần chỉnh sửa và nạp thông tin hiện tại lên Form
   const handleEditClick = (ex: Exhibit) => {
     setIsEditing(true); 
     setCode(ex.ExhibitID); 
@@ -262,14 +278,14 @@ export const ExhibitManagerView: React.FC = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // [UC-12] Luồng A2: Xóa hồ sơ hiện vật
+  // [UC-12 - Luồng thay thế A2 (Bước 1, 2, 3, 4)] Hiển thị xác nhận xóa, xóa hồ sơ hiện vật và cập nhật lại danh sách
   const handleDelete = async (id: string) => {
     if (!window.confirm(`Xóa dữ liệu mã ${id}?`)) return;
     const response = await fetch(`http://localhost:3000/api/exhibits/${id}`, { method: 'DELETE' });
     if (response.ok) fetchExhibits();
   };
 
-  // Lọc hiển thị danh sách theo Tab
+  // [UC-12 - Bước 2] Lọc hiển thị danh sách hiện vật theo chế độ xem
   const filteredList = exhibits.filter(ex => {
     const isZone = ex.ExhibitID.toUpperCase().startsWith('KHU-') || ex.ExhibitID.toUpperCase().startsWith('ZONE-');
     return isZoneAudio ? isZone : !isZone;
@@ -278,7 +294,7 @@ export const ExhibitManagerView: React.FC = () => {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
       
-      {/* KHỐI 1: FORM NHẬP LIỆU */}
+      {/* [UC-12 - Bước 4, 5, 6] KHỐI 1: BIỂU MẪU NHẬP / CHỈNH SỬA THÔNG TIN HIỆN VẬT */}
       <div className="museum-card" style={{ width: '100%', boxSizing: 'border-box' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
           <h2 className="museum-section-title" style={{ margin: 0 }}>
@@ -290,7 +306,7 @@ export const ExhibitManagerView: React.FC = () => {
         <form onSubmit={handleSave}>
           <div className="museum-form-grid">
             
-            {/* TÙY CHỌN LOẠI HIỆN VẬT */}
+            {/* [UC-12 - Bước 4] TÙY CHỌN LOẠI HIỆN VẬT */}
             <div className="museum-form-group" style={{ gridColumn: '1 / -1' }}>
               <label className="museum-label">Loại dữ liệu:</label>
               <div style={{ display: 'flex', gap: '24px', alignItems: 'center', backgroundColor: '#1E1E1C', padding: '12px', borderRadius: '8px', border: '1px solid #33332F' }}>
@@ -305,6 +321,7 @@ export const ExhibitManagerView: React.FC = () => {
               </div>
             </div>
 
+            {/* [UC-12 - Bước 5] Chọn Khu vực trưng bày */}
             <div className="museum-form-group">
               <label className="museum-label">Khu Vực:</label>
               <select className="museum-select" value={zoneCode} onChange={e => {
@@ -316,6 +333,7 @@ export const ExhibitManagerView: React.FC = () => {
               </select>
             </div>
 
+            {/* [UC-12 - Bước 5 & Luồng A1] Nhập mã định danh hiện vật (Giữ nguyên mã khi chỉnh sửa) */}
             <div className="museum-form-group">
               <label className="museum-label">Mã (ID):</label>
               <input 
@@ -330,7 +348,7 @@ export const ExhibitManagerView: React.FC = () => {
               />
             </div>
             
-            {/* ẨN Ô ẢNH KHI LÀ AUDIO KHU VỰC */}
+            {/* [UC-12 - Bước 5] Quản lý tải lên hình ảnh hiện vật */}
             {!isZoneAudio && (
               <div className="museum-form-group" style={{ gridColumn: '1 / -1' }}>
                 <label className="museum-label">Hình ảnh chung (Max 5MB):</label>
@@ -352,7 +370,7 @@ export const ExhibitManagerView: React.FC = () => {
           <hr style={{ borderColor: '#33332F', margin: '24px 0' }} />
           <h3 style={{ color: '#D49B4B', marginTop: 0, marginBottom: '16px' }}>Nội Dung & Audio Đa Ngôn Ngữ</h3>
 
-          {/* [UC-12] Giao diện điền Tên hiện vật, Nội dung Thuyết minh & Audio đa ngôn ngữ */}
+          {/* [UC-12 - Bước 5] Giao diện điền Tên hiện vật, Nội dung Thuyết minh & Audio đa ngôn ngữ */}
           {translations.map((trans, index) => (
             <div key={trans.langCode} style={{ padding: '16px', backgroundColor: '#141413', borderRadius: '8px', marginBottom: '16px', borderLeft: `4px solid ${index === 0 ? '#2EBD85' : '#3B82F6'}`, position: 'relative' }}>
               <h4 style={{ margin: '0 0 12px 0', color: index === 0 ? '#2EBD85' : '#3B82F6' }}>Ngôn ngữ: {trans.langName} {index === 0 && '(Bắt buộc)'}</h4>
@@ -404,6 +422,7 @@ export const ExhibitManagerView: React.FC = () => {
             </select>
           </div>
 
+          {/* [UC-12 - Bước 6] & [UC-13 - Bước 3] Nút bấm Lưu hiện vật và Tạo mã QR */}
           <div style={{ display: 'flex', gap: '12px' }}>
             <button type="submit" className="museum-btn-primary" style={{ flex: 1, padding: '14px' }}>
               {isEditing ? '💾 CẬP NHẬT DỮ LIỆU' : (isZoneAudio ? '➕ LƯU ÂM THANH KHU VỰC' : '➕ LƯU HIỆN VẬT & TẠO QR')}
@@ -416,7 +435,7 @@ export const ExhibitManagerView: React.FC = () => {
           </div>
         </form>
 
-        {/* [UC-13] UI Hiển thị và tải mã QR sau khi Lưu thành công */}
+        {/* [UC-13 - Bước 5, 6, 7 & Luồng thay thế A2] UI Hiển thị bản xem trước mã QR và nút Tải tệp ảnh mã QR sau khi Lưu thành công */}
         {savedQR && !isZoneAudio && (
           <div style={{ textAlign: 'center', marginTop: '24px', padding: '16px', border: '2px dashed #2EBD85', borderRadius: '8px' }}>
             <h3 style={{ color: '#2EBD85', marginTop: 0 }}>🎉 Lưu Thành Công! Mã QR đã sẵn sàng</h3>
@@ -427,7 +446,7 @@ export const ExhibitManagerView: React.FC = () => {
         )}
       </div>
       
-      {/* KHỐI 2: DANH SÁCH (ĐÃ LỌC TỰ ĐỘNG) */}
+      {/* [UC-12 - Bước 2] KHỐI 2: HIỂN THỊ DANH SÁCH HIỆN VẬT VÀ CÁC THAO TÁC QUẢN LÝ */}
       <div className="museum-card" style={{ width: '100%', boxSizing: 'border-box' }}>
         <h2 className="museum-section-title">
           {isZoneAudio ? 'Danh Sách Âm Thanh Các Khu Vực' : 'Danh Sách Hiện Vật Lẻ'}
@@ -457,7 +476,7 @@ export const ExhibitManagerView: React.FC = () => {
                       {ex.AudioBase64_VI ? '🎵 Có Audio VN' : '🚫 Không Audio VN'}
                     </td>
                     <td style={{ padding: '12px' }}>
-                      {/* [UC-12] Nút bấm Kích hoạt Chỉnh sửa & Xóa */}
+                      {/* [UC-12 - Luồng thay thế A1 & A2] Nút bấm Kích hoạt Chỉnh sửa (A1) & Xóa hiện vật (A2) */}
                       <button onClick={() => handleEditClick(ex)} style={{ marginRight: '8px', padding: '6px 12px', backgroundColor: '#F59E0B', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>Sửa</button>
                       <button onClick={() => handleDelete(ex.ExhibitID)} style={{ padding: '6px 12px', backgroundColor: '#EF4444', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>Xóa</button>
                     </td>

@@ -42,7 +42,7 @@ export const PassManagementView: React.FC<PassManagementProps> = ({
   setPassHistory,
   onRevokePass,
 }) => {
-  const [selectedCategory, setSelectedCategory] = useState<PassCategory>('SINGLE_VISITOR');
+  const [selectedCategory, setSelectedCategory] = useState<PassCategory>('SINGLE_VISITOR'); // Mặc định là Vé Khách Lẻ
   const [groupSize, setGroupSize] = useState<number>(15);
 
   // Giới hạn thời gian: chỉ lưu trữ trong vòng 7 ngày tính đến hiện tại
@@ -102,6 +102,7 @@ export const PassManagementView: React.FC<PassManagementProps> = ({
         headers: {
           'Content-Type': 'application/json',
         },
+        // Gửi dữ liệu mã vé mới lên server để lưu trữ
         body: JSON.stringify({
           passId: newPass.pinCode,
           amount: newPass.priceVnd,

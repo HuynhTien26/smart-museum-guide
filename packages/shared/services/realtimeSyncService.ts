@@ -2,6 +2,7 @@
  * ============================================================================
  * TỆP: packages/shared/services/realtimeSyncService.ts
  * MỤC ĐÍCH: Cầu nối đồng bộ thời gian thực giữa Dashboard, Mobile App và Web.
+ * [UC-08] Giám sát người dùng đang hoạt động theo thời gian thực
  * ============================================================================
  */
 import { io, Socket } from 'socket.io-client';
@@ -22,7 +23,7 @@ class RealtimeSyncManager {
   private currentRole: 'ADMIN' | 'GUEST' | 'ACTIVE_USER' = 'ADMIN';
   private listeners: Map<SyncEventType, Set<EventCallback>> = new Map();
 
-  // Mặc định là 'ADMIN' để Dashboard gọi connect() không bị tính là Khách vãng lai
+  // [UC-08 - Bước 2 & Bước 3] Thiết lập kết nối kênh WebSocket thời gian thực và định danh phiên (ADMIN / GUEST / ACTIVE_USER)
   public connect(role: 'ADMIN' | 'GUEST' | 'ACTIVE_USER' = 'ADMIN'): void {
     this.currentRole = role;
 
@@ -38,6 +39,7 @@ class RealtimeSyncManager {
       return;
     }
 
+    // [UC-08 - Bước 2 & Luồng ngoại lệ E1] Khởi tạo Socket.IO kèm chế độ tự động kết nối lại (reconnection: true) khi mất mạng
     this.socket = io('/', {
       transports: ['websocket', 'polling'],
       reconnection: true,
@@ -48,7 +50,7 @@ class RealtimeSyncManager {
       this.socket?.emit('UPDATE_ROLE', { role: this.currentRole, tabId });
     });
 
-    // Lắng nghe tín hiệu đếm thiết bị từ Server Node.js (UC-08)
+    // [UC-08 - Bước 4 & Bước 5] Lắng nghe tín hiệu đếm thiết bị từ Server Node.js để tự cập nhật chỉ số trực tiếp trên Dashboard
     this.socket.on('UPDATE_CONNECTIONS', (data: { total: number }) => {
       realtimeBus.publish('UPDATE_CONNECTIONS', data);
       this.notifyListeners('UPDATE_CONNECTIONS', data);

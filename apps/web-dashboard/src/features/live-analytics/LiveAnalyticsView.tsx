@@ -1,15 +1,18 @@
 /**
  * apps/web-dashboard/src/features/live-analytics/LiveAnalyticsView.tsx
+ * MỤC ĐÍCH: Màn hình Dashboard thống kê và phân tích hoạt động theo thời gian thực
  */
 import React, { useEffect, useState, useCallback } from 'react';
 // @ts-ignore
 import '../../../../../packages/shared/styles/commonStyles.css';
 
+// [UC-09] Cấu trúc dữ liệu thống kê số lượt theo từng ngôn ngữ
 interface LangStat {
   langCode: string;
   count: number;
 }
 
+// [UC-10] Cấu trúc dữ liệu xếp hạng hiện vật được nghe nhiều nhất
 interface MostListenedItem {
   exhibitId: string;
   exhibitName: string;
@@ -17,6 +20,7 @@ interface MostListenedItem {
   playCount: number;
 }
 
+// [UC-11] Cấu trúc dữ liệu xếp hạng hiện vật được nghe lại / tua lùi nhiều nhất
 interface MostReplayedItem {
   exhibitId: string;
   exhibitName: string;
@@ -26,6 +30,7 @@ interface MostReplayedItem {
   totalReplays: number;
 }
 
+// [UC-09 - Bước 3] Danh sách 5 ngôn ngữ thuyết minh cần tổng hợp (VI, EN, FR, JA, KO)
 const SUPPORTED_LANGUAGES = [
   { code: 'vi', name: 'Tiếng Việt', flag: '🇻🇳', color: '#2EBD85' },
   { code: 'en', name: 'Tiếng Anh', flag: '🇬🇧', color: '#3B82F6' },
@@ -35,17 +40,24 @@ const SUPPORTED_LANGUAGES = [
 ];
 
 export const LiveAnalyticsView: React.FC = () => {
+  // [UC-08 - Bước 4 & Luồng thay thế A2] State hiển thị số người dùng đang hoạt động (mặc định là 0 khi không có phiên)
   const [onlinePinUsers, setOnlinePinUsers] = useState<number>(0);
   const [liveGuests, setLiveGuests] = useState<number>(0);
 
+  // [UC-09, UC-10, UC-11 - Luồng thay thế A1] State lọc khoảng thời gian thống kê (Tất cả, Hôm nay, 7 ngày qua)
   const [period, setPeriod] = useState<'all' | 'day' | 'week' >('all');
+  // [UC-09] State lưu kết quả thống kê ngôn ngữ
   const [langStats, setLangStats] = useState<LangStat[]>([]);
+  // [UC-10] State lưu danh sách xếp hạng hiện vật nghe nhiều nhất
   const [mostListened, setMostListened] = useState<MostListenedItem[]>([]);
+  // [UC-11] State lưu danh sách xếp hạng hiện vật nghe lại / tua lùi nhiều nhất
   const [mostReplayed, setMostReplayed] = useState<MostReplayedItem[]>([]);
+  // [UC-09, UC-10, UC-11 - Luồng ngoại lệ E1] State lưu thông báo lỗi khi truy vấn thống kê thất bại
   const [reportError, setReportError] = useState<string | null>(null);
 
   const apiHost = `http://${window.location.hostname}:3000`;
 
+  // [UC-08 - Bước 3 & Bước 4] Truy vấn và tổng hợp số thiết bị đang hoạt động theo thời gian thực
   const fetchRealtimeSummary = useCallback(async () => {
     try {
       const passRes = await fetch(`${apiHost}/api/passes/history`);
@@ -57,16 +69,20 @@ export const LiveAnalyticsView: React.FC = () => {
         setOnlinePinUsers(activeCount);
       }
 
+      // UC 8: Tính tổng thiết bị đang kết nối bằng lệnh fetch trực tiếp từ API thống kê tổng quan
+
       const summaryRes = await fetch(`${apiHost}/api/analytics/summary`);
       const summaryData = await summaryRes.json();
       if (summaryData.success) {
         setLiveGuests(summaryData.liveGuestCount || 0);
       }
     } catch (err) {
+      // [UC-08 - Luồng ngoại lệ E1 & E2] Ghi nhận lỗi khi mất kết nối dữ liệu trực tiếp
       console.error('Lỗi đồng bộ trạng thái Online:', err);
     }
   }, [apiHost]);
 
+  // [UC-09, UC-10, UC-11 - Bước 2] Gửi yêu cầu truy vấn báo cáo thống kê từ bảng AnalyticsEvents theo khoảng thời gian
   const fetchSqlAnalyticsReports = useCallback(async () => {
     setReportError(null);
     try {
@@ -75,17 +91,23 @@ export const LiveAnalyticsView: React.FC = () => {
       const data = await response.json();
 
       if (data.success) {
+        // [UC-09 - Bước 3] Cập nhật dữ liệu thống kê ngôn ngữ
         setLangStats(Array.isArray(data.languages) ? data.languages : []);
+        // [UC-10 - Bước 3 & Bước 4] Cập nhật bảng xếp hạng hiện vật nghe nhiều nhất
         setMostListened(Array.isArray(data.mostListened) ? data.mostListened : []);
+        // [UC-11 - Bước 3 & Bước 4] Cập nhật bảng xếp hạng hiện vật nghe lại nhiều nhất
         setMostReplayed(Array.isArray(data.mostReplayed) ? data.mostReplayed : []);
       } else {
+        // [UC-09, UC-10, UC-11 - Luồng ngoại lệ E1] Hiển thị thông báo lỗi từ Server
         setReportError(data.message || 'Lỗi tải dữ liệu thống kê.');
       }
     } catch (error) {
+      // [UC-09, UC-10, UC-11 - Luồng ngoại lệ E1] Không tải được thống kê -> hiển thị lỗi và cho phép thử lại
       setReportError('Không thể kết nối dữ liệu thống kê.');
     }
   }, [apiHost, period]);
 
+  // [UC-08 - Bước 5] Tự động cập nhật chỉ số định kỳ mỗi 5 giây khi phiên hoạt động hoặc bộ lọc thời gian thay đổi
   useEffect(() => {
     fetchRealtimeSummary();
     fetchSqlAnalyticsReports();
@@ -98,6 +120,7 @@ export const LiveAnalyticsView: React.FC = () => {
     return () => clearInterval(interval);
   }, [fetchRealtimeSummary, fetchSqlAnalyticsReports]);
 
+  // [UC-09 - Bước 3 & Bước 4] Tổng hợp số lượt và tính tỷ lệ phần trăm (%) sử dụng theo 5 ngôn ngữ: VI, EN, FR, JA, KO
   const totalLangEvents = langStats.reduce((sum, item) => sum + Number(item.count || 0), 0);
   const mergedLanguages = SUPPORTED_LANGUAGES.map((lang) => {
     const found = langStats.find((s) => s.langCode?.toLowerCase() === lang.code);
@@ -106,6 +129,7 @@ export const LiveAnalyticsView: React.FC = () => {
     return { ...lang, count, percentage };
   });
 
+  // [UC-09 - Bước 5] Xác định ngôn ngữ thuyết minh được sử dụng nhiều nhất
   const topLanguage =
     totalLangEvents > 0 ? [...mergedLanguages].sort((a, b) => b.count - a.count)[0] : null;
 
@@ -149,6 +173,7 @@ export const LiveAnalyticsView: React.FC = () => {
           </p>
         </div>
 
+        {/* [UC-09, UC-10, UC-11 - Luồng thay thế A1] Chọn khoảng thời gian lọc kết quả & [UC-08 - Luồng thay thế A1] Làm mới Dashboard */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
           <span style={{ fontSize: '13px', color: '#D49B4B', fontWeight: 'bold' }}>Khoảng thời gian:</span>
           {[
@@ -173,6 +198,7 @@ export const LiveAnalyticsView: React.FC = () => {
               {item.label}
             </button>
           ))}
+          {/* [UC-08 - Luồng thay thế A1] Nút Làm mới để kết nối lại và tải số liệu mới */}
           <button
             onClick={() => {
               fetchRealtimeSummary();
@@ -194,6 +220,7 @@ export const LiveAnalyticsView: React.FC = () => {
         </div>
       </div>
 
+      {/* [UC-09, UC-10, UC-11 - Luồng ngoại lệ E1] Hiển thị thông báo khi truy vấn thống kê lỗi và nút Thử lại */}
       {reportError && (
         <div
           style={{
@@ -225,7 +252,7 @@ export const LiveAnalyticsView: React.FC = () => {
         </div>
       )}
 
-      {/* HÀNG 1: ĐANG ONLINE & KHÁCH VÃNG LAI */}
+      {/* [UC-08 - Bước 4, Bước 5 & Luồng thay thế A2] HÀNG 1: HIỂN THỊ SỐ THIẾT BỊ ĐANG ONLINE & KHÁCH VÃNG LAI */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(380px, 1fr))', gap: '20px' }}>
         <div style={{ ...cardStyle, backgroundColor: '#1A1E1C', border: '1px solid #2EBD85' }}>
           <div style={{ color: '#2EBD85', fontWeight: 'bold', fontSize: '15px' }}>
@@ -248,7 +275,7 @@ export const LiveAnalyticsView: React.FC = () => {
         </div>
       </div>
 
-      {/* HÀNG 2: THỐNG KÊ NGÔN NGỮ THUYẾT MINH */}
+      {/* [UC-09 - Bước 1, 4, 5 & Luồng thay thế A2] HÀNG 2: THỐNG KÊ NGÔN NGỮ THUYẾT MINH PHỔ BIẾN NHẤT */}
       <div style={{ ...cardStyle, border: '1px solid #3B82F6', gap: '18px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
           <div>
@@ -260,6 +287,7 @@ export const LiveAnalyticsView: React.FC = () => {
             </p>
           </div>
 
+          {/* [UC-09 - Bước 5 & Luồng thay thế A2] Hiển thị ngôn ngữ phổ biến nhất hoặc thông báo bằng 0 khi chưa có dữ liệu */}
           <div
             style={{
               padding: '8px 14px',
@@ -282,6 +310,7 @@ export const LiveAnalyticsView: React.FC = () => {
           </div>
         </div>
 
+        {/* [UC-09 - Bước 4] Hiển thị biểu đồ thanh tỷ lệ phần trăm (%) và số lượt của 5 ngôn ngữ */}
         <div
           style={{
             display: 'grid',
@@ -330,9 +359,9 @@ export const LiveAnalyticsView: React.FC = () => {
         </div>
       </div>
 
-      {/* HÀNG 3: HIỆN VẬT NGHE NHIỀU NHẤT & NGHE LẠI NHIỀU NHẤT (ĐÃ BỎ SỐ LỚN) */}
+      {/* HÀNG 3: HIỆN VẬT NGHE NHIỀU NHẤT [UC-10] & NGHE LẠI NHIỀU NHẤT [UC-11] */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(380px, 1fr))', gap: '20px' }}>
-        {/* Khung Trái: Hiện Vật Được Nghe Nhiều Nhất */}
+        {/* [UC-10 - Bước 1, 4, 5] Khung Trái: Bảng xếp hạng Hiện Vật Được Nghe Nhiều Nhất */}
         <div style={{ ...cardStyle, border: '1px solid #D49B4B', justifyContent: 'flex-start', gap: '16px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px' }}>
             <div>
@@ -359,11 +388,13 @@ export const LiveAnalyticsView: React.FC = () => {
             )}
           </div>
 
+          {/* [UC-10 - Luồng thay thế A2] Không có sự kiện nghe -> Hiển thị thông báo chưa có dữ liệu */}
           {mostListened.length === 0 ? (
             <div style={{ padding: '20px', textAlign: 'center', fontSize: '13px', color: '#9CA3AF', backgroundColor: '#141413', borderRadius: '8px' }}>
               Chưa có lượt nghe hiện vật nào được ghi nhận.
             </div>
           ) : (
+            /* [UC-10 - Bước 5] Hiển thị bảng xếp hạng hiện vật theo số lượt nghe giảm dần */
             <div style={{ overflowX: 'auto' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
                 <thead>
@@ -395,7 +426,7 @@ export const LiveAnalyticsView: React.FC = () => {
           )}
         </div>
 
-        {/* Khung Phải: Hiện Vật Được Nghe Lại / Tua Lùi Nhiều Nhất */}
+        {/* [UC-11 - Bước 1, 4, 5] Khung Phải: Bảng xếp hạng Hiện Vật Được Nghe Lại / Tua Lùi Nhiều Nhất */}
         <div style={{ ...cardStyle, border: '1px solid #A855F7', justifyContent: 'flex-start', gap: '16px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px' }}>
             <div>
@@ -422,11 +453,13 @@ export const LiveAnalyticsView: React.FC = () => {
             )}
           </div>
 
+          {/* [UC-11 - Luồng thay thế A2] Không có sự kiện nghe lại -> Hiển thị trạng thái chưa có dữ liệu */}
           {mostReplayed.length === 0 ? (
             <div style={{ padding: '20px', textAlign: 'center', fontSize: '13px', color: '#9CA3AF', backgroundColor: '#141413', borderRadius: '8px' }}>
               Chưa có lượt nghe lại hoặc tua lùi nào được ghi nhận.
             </div>
           ) : (
+            /* [UC-11 - Bước 4 & Bước 5] Hiển thị danh sách xếp hạng lượt nghe lại và tua lùi theo từng hiện vật */
             <div style={{ overflowX: 'auto' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
                 <thead>
