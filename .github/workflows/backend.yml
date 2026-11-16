@@ -1,0 +1,35 @@
+name: Backend Pipeline
+
+on:
+  push:
+    branches: [ "main" ]
+    paths:
+      - 'apps/api-backend/**' # Chỉ chạy khi có thay đổi ở backend
+
+jobs:
+  build-and-deploy-backend:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Install Backend Dependencies
+        working-directory: ./apps/api-backend
+        run: npm install
+
+      # - name: Deploy Backend to Server
+      #   uses: appleboy/ssh-action@master
+      #   with:
+      #     host: ${{ secrets.VPS_HOST }}
+      #     username: ${{ secrets.VPS_USERNAME }}
+      #     key: ${{ secrets.VPS_SSH_KEY }}
+      #     script: |
+      #       cd /var/www/museum-api-backend
+      #       git pull origin main
+      #       npm install
+      #       pm2 restart museum-backend

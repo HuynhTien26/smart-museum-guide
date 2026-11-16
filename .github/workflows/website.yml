@@ -1,0 +1,47 @@
+name: Website Visitor Pipeline
+
+on:
+  push:
+    branches: [ "main" ]
+    paths:
+      - 'apps/website-visitor/**'
+      - 'packages/shared/**'
+
+jobs:
+  build-website:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v3
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 8
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'pnpm'
+
+      - name: Install Dependencies
+        run: pnpm install
+
+      - name: Build Website
+        working-directory: ./apps/website-visitor
+        env:
+          VITE_API_URL: ${{ secrets.PRODUCTION_API_URL }}
+        run: pnpm run build
+
+      # - name: Deploy Website to Netlify/Vercel
+      #   uses: nwtgck/actions-netlify@v2.0
+      #   with:
+      #     publish-dir: './apps/website-visitor/dist'
+      #     production-branch: main
+      #     github-token: ${{ secrets.GITHUB_TOKEN }}
+      #     deploy-message: "Deploy Website Visitor"
+      #     enable-commit-comment: false
+      #   env:
+      #     NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+      #     NETLIFY_SITE_ID: ${{ secrets.NETLIFY_WEBSITE_SITE_ID }}
