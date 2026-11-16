@@ -1,55 +1,67 @@
 -- 1. KHỞI TẠO DATABASE
-CREATE DATABASE MuseumDB;
+IF NOT EXISTS (SELECT name FROM sys.databases WHERE name = 'MuseumDB')
+BEGIN
+    CREATE DATABASE MuseumDB;
+END
 GO
 
 USE MuseumDB;
 GO
 
--- 2. TẠO BẢNG HIỆN VẬT (BẢNG TRỐNG)
-CREATE TABLE Exhibits (
-    ExhibitID VARCHAR(50) PRIMARY KEY,
-    ZoneCode INT NOT NULL,
-    ExhibitName NVARCHAR(255) NOT NULL,
-    ImageBase64 VARCHAR(MAX),
-    AudioBase64_VI VARCHAR(MAX),
-    Transcript_VI NVARCHAR(MAX),
-    TranslationsJSON NVARCHAR(MAX), -- Chứa chuỗi JSON cho các ngôn ngữ khác
-    ListenCount INT DEFAULT 0       -- Đếm lượt nghe của riêng hiện vật này
-);
+-- 2. TẠO BẢNG HIỆN VẬT
+IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'Exhibits')
+BEGIN
+    CREATE TABLE Exhibits (
+        ExhibitID VARCHAR(50) PRIMARY KEY,
+        ZoneCode INT NOT NULL,
+        ExhibitName NVARCHAR(255) NOT NULL,
+        ImageBase64 VARCHAR(MAX),
+        AudioBase64_VI VARCHAR(MAX),
+        Transcript_VI NVARCHAR(MAX),
+        TranslationsJSON NVARCHAR(MAX), -- Chứa chuỗi JSON cho các ngôn ngữ khác
+        ListenCount INT DEFAULT 0       -- Đếm lượt nghe của riêng hiện vật này
+    );
+END
 GO
 
--- 3. TẠO BẢNG LỊCH SỬ VÉ & THỐNG KÊ DOANH THU (BẢNG TRỐNG)
-CREATE TABLE PassHistory (
-    PassID VARCHAR(20) PRIMARY KEY,          -- Mã PIN hệ thống cấp
-    PurchaseDate DATETIME DEFAULT GETDATE(), -- Ngày giờ mua
-    Amount DECIMAL(18,2) DEFAULT 50000,      -- Giá vé
-    DeviceLimit INT DEFAULT 1,               -- Giới hạn số thiết bị dùng chung
-    Status NVARCHAR(50) DEFAULT 'Active',    -- Trạng thái: Active / Expired / Revoked
-    ActivationDate DATETIME,                 -- Thời điểm khách bắt đầu nhập mã
-    UserIP VARCHAR(50),                      -- Địa chỉ IP người mua
-    PackageType NVARCHAR(100),               -- Tên gói (VD: Vé Khách Lẻ, Vé Đoàn)
-    ParticipantCount INT DEFAULT 1,          -- Số lượng khách trong gói
-    UsedDevices INT DEFAULT 0                -- Số thiết bị đang online thực tế
-);
+-- 3. TẠO BẢNG LỊCH SỬ VÉ & THỐNG KÊ DOANH THU
+IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'PassHistory')
+BEGIN
+    CREATE TABLE PassHistory (
+        PassID VARCHAR(20) PRIMARY KEY,          -- Mã PIN hệ thống cấp
+        PurchaseDate DATETIME DEFAULT GETDATE(), -- Ngày giờ mua
+        Amount DECIMAL(18,2) DEFAULT 50000,      -- Giá vé
+        DeviceLimit INT DEFAULT 1,               -- Giới hạn số thiết bị dùng chung
+        Status NVARCHAR(50) DEFAULT 'UNUSED',    -- Trạng thái: UNUSED / Active / INACTIVE / Expired / Revoked
+        ActivationDate DATETIME,                 -- Thời điểm khách bắt đầu nhập mã
+        UserIP VARCHAR(50),                      -- Địa chỉ IP người mua
+        PackageType NVARCHAR(100),               -- Tên gói (VD: Vé Khách Lẻ, Vé Đoàn)
+        ParticipantCount INT DEFAULT 1,          -- Số lượng khách trong gói
+        UsedDevices INT DEFAULT 0                -- Số thiết bị đang online thực tế
+    );
+END
 GO
 
 -- 4. TẠO BẢNG THỐNG KÊ HỆ THỐNG
-CREATE TABLE SystemAnalytics (
-    ID INT PRIMARY KEY DEFAULT 1,
-    LiveGuestCount INT DEFAULT 0,  -- Khách vãng lai (Chưa nhập PIN)
-    TotalListens INT DEFAULT 0     -- Tổng lượt nghe toàn hệ thống
-);
+IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'SystemAnalytics')
+BEGIN
+    CREATE TABLE SystemAnalytics (
+        ID INT PRIMARY KEY DEFAULT 1,
+        LiveGuestCount INT DEFAULT 0,  -- Khách vãng lai (Chưa nhập PIN)
+        TotalListens INT DEFAULT 0     -- Tổng lượt nghe toàn hệ thống
+    );
+END
 GO
 
--- 5. KHỞI TẠO DỮ LIỆU HỆ THỐNG (BẮT BUỘC)
--- Phải có 1 dòng gốc này để Dashboard có chỗ cộng dồn số liệu Real-time
-INSERT INTO SystemAnalytics (ID, LiveGuestCount, TotalListens) 
-VALUES (1, 0, 0);
-GO
-USE MuseumDB;
+-- 5. KHỞI TẠO DỮ LIỆU HỆ THỐNG (CHỐNG TRÙNG LẶP KHI CHẠY LẠI)
+IF NOT EXISTS (SELECT 1 FROM SystemAnalytics WHERE ID = 1)
+BEGIN
+    INSERT INTO SystemAnalytics (ID, LiveGuestCount, TotalListens) 
+    VALUES (1, 0, 0);
+END
 GO
 
--- TẠO BẢNG LƯU SỰ KIỆN THỐNG KÊ CHI TIẾT (UC-09, UC-10, UC-11)
+-- 6. TẠO BẢNG LƯU SỰ KIỆN THỐNG KÊ CHI TIẾT (UC-09, UC-10, UC-11)
 IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'AnalyticsEvents')
 BEGIN
     CREATE TABLE AnalyticsEvents (
@@ -61,6 +73,7 @@ BEGIN
     );
 END
 GO
+
 -- ==========================================
 -- CÁC CÂU LỆNH TRUY VẤN THƯỜNG DÙNG (BÔI ĐEN ĐỂ CHẠY KHI CẦN)
 -- ==========================================
@@ -74,9 +87,19 @@ SELECT * FROM PassHistory;
 -- Xem Khách vãng lai và Tổng lượt nghe
 SELECT * FROM SystemAnalytics;
 
--- Kiểm tra số thiết bị Đang Online
-SELECT SUM(UsedDevices) AS TongNguoiDangOnline FROM PassHistory WHERE Status = 'Active';
+-- Kiểm tra số thiết bị Đang Online hợp lệ
+SELECT ISNULL(SUM(UsedDevices), 0) AS TongNguoiDangOnline 
+FROM PassHistory 
+WHERE Status IN ('Active', 'ACTIVE')
+  AND ActivationDate IS NOT NULL
+  AND GETDATE() <= DATEADD(hour, 24, ActivationDate);
 
--- Reset toàn bộ thiết bị đang online về 0 (Dọn dẹp hệ thống khi kẹt số)
-UPDATE PassHistory SET UsedDevices = 0;
+-- Reset toàn bộ thiết bị đang online về 0 và đồng bộ trạng thái (Dọn dẹp khi kẹt số)
+UPDATE PassHistory 
+SET UsedDevices = 0,
+    Status = CASE 
+               WHEN Status IN ('Active', 'ACTIVE') THEN 'INACTIVE' 
+               ELSE Status 
+             END
+WHERE ISNULL(UsedDevices, 0) > 0;
 */

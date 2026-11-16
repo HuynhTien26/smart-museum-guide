@@ -94,6 +94,34 @@ io.on('connection', (socket) => {
 });
 
 const pendingReleaseTimers = new Map<string, NodeJS.Timeout>();
+const activePinHeartbeats = new Map<string, { lastSeen: number; sessions: number }>();
+
+function touchPinHeartbeat(passId: string, deltaSessions = 0) {
+  const current = activePinHeartbeats.get(passId) || { lastSeen: Date.now(), sessions: 0 };
+  current.lastSeen = Date.now();
+  current.sessions = Math.max(0, current.sessions + deltaSessions);
+  if (current.sessions === 0 && deltaSessions < 0) {
+    activePinHeartbeats.delete(passId);
+  } else {
+    activePinHeartbeats.set(passId, current);
+  }
+}
+
+// Tự động giải phóng thiết bị nếu quá 45 giây không nhận được tín hiệu keepalive (đóng tab đột ngột / rớt mạng)
+setInterval(() => {
+  const now = Date.now();
+  activePinHeartbeats.forEach(async (info, passId) => {
+    if (now - info.lastSeen > 45000) {
+      activePinHeartbeats.delete(passId);
+      const releaseCount = Math.max(1, info.sessions);
+      for (let i = 0; i < releaseCount; i++) {
+        try {
+          await passDao.releaseDevice(passId);
+        } catch (_err) {}
+      }
+    }
+  });
+}, 15000);
 
 function generateRandomPin(): string {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -218,6 +246,7 @@ app.post('/api/passes/verify', async (req: Request, res: Response) => {
     const result = await passDao.verifyAndActivatePass(cleanId);
     if (!result.valid) return res.status(400).json({ success: false, message: result.message });
 
+    touchPinHeartbeat(cleanId, 1);
     res.json({ success: true, data: result });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Lỗi server xác thực PIN' });
@@ -240,8 +269,11 @@ app.post('/api/passes/keepalive', async (req: Request, res: Response) => {
     const currentPass = history.find((p: any) => p.PassID === cleanId);
 
     if (!currentPass || currentPass.Status === 'REVOKED' || currentPass.Status === 'EXPIRED') {
+      activePinHeartbeats.delete(cleanId);
       return res.json({ valid: false });
     }
+
+    touchPinHeartbeat(cleanId, 0);
     res.json({ valid: true, status: currentPass.Status });
   } catch (error) {
     res.status(500).json({ valid: false });
@@ -255,6 +287,8 @@ app.post('/api/passes/release', async (req: Request, res: Response) => {
     if (!passId) return res.json({ success: false });
 
     const cleanId = passId.trim().toUpperCase();
+    touchPinHeartbeat(cleanId, -1);
+
     if (immediate) {
       if (pendingReleaseTimers.has(cleanId)) {
         clearTimeout(pendingReleaseTimers.get(cleanId)!);
@@ -284,7 +318,9 @@ app.post('/api/passes/release', async (req: Request, res: Response) => {
 
 app.put('/api/passes/:id/revoke', async (req: Request, res: Response) => {
   try {
-    await passDao.revokePass(req.params.id as string);
+    const cleanId = (req.params.id as string).trim().toUpperCase();
+    activePinHeartbeats.delete(cleanId);
+    await passDao.revokePass(cleanId);
     res.json({ success: true, message: 'Đã khóa mã vé trong SQL' });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Lỗi khi khóa mã vé' });
@@ -410,7 +446,7 @@ app.get('/api/analytics/summary', async (_req: Request, res: Response) => {
     const onlineResult = await pool.request().query(`
       SELECT ISNULL(SUM(UsedDevices), 0) AS TotalOnline
       FROM PassHistory
-      WHERE Status = 'Active'
+      WHERE Status IN ('Active', 'ACTIVE')
       AND ActivationDate IS NOT NULL
       AND GETDATE() <= DATEADD(hour, 24, ActivationDate)
     `);
@@ -437,7 +473,6 @@ async function checkAndInitSQL() {
     const pool = await sql.connect(dbConfig);
     console.log('✅ Đã kết nối SQL Server (MuseumDB) thành công!');
 
-    // Tự động tạo bảng AnalyticsEvents, SystemAnalytics và cột ListenCount nếu chưa có
     await pool.request().query(`
       IF COL_LENGTH('Exhibits', 'ListenCount') IS NULL
       BEGIN
@@ -464,8 +499,19 @@ async function checkAndInitSQL() {
             CreatedAt DATETIME DEFAULT GETDATE()
         );
       END
+
+      -- Dọn dẹp các phiên online bị kẹt từ lần chạy trước
+      IF EXISTS (SELECT * FROM sys.tables WHERE name = 'PassHistory')
+      BEGIN
+        UPDATE PassHistory
+        SET UsedDevices = 0,
+            Status = CASE WHEN Status IN ('Active', 'ACTIVE') THEN 'INACTIVE' ELSE Status END
+        WHERE ISNULL(UsedDevices, 0) > 0;
+      END
+
+      UPDATE SystemAnalytics SET LiveGuestCount = 0 WHERE ID = 1;
     `);
-    console.log('✅ Đã đồng bộ toàn bộ cấu trúc bảng SQL (bao gồm UC-09, 10, 11) thành công!');
+    console.log('✅ Đã đồng bộ cấu trúc bảng SQL và dọn sạch phiên treo thành công!');
   } catch (err: any) {
     console.error('❌ LỖI KẾT NỐI SQL SERVER:', err.message);
   }
