@@ -1,25 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { PublicExhibitList } from './features/exhibits/PublicExhibitList';
 import { realtimeBus } from '../../../packages/shared/services/realtimeEventBus';
-// BƯỚC 1: Import realtimeSyncService
 import { realtimeSyncService } from '../../../packages/shared/services/realtimeSyncService';
 
 const SESSION_PIN_KEY = 'MUSEUM_SESSION_ACTIVE_PIN';
 
 export default function App() {
   const [activePin, setActivePin] = useState<string | null>(() => {
-    // Xóa localStorage cũ để không bị kẹt mã PIN giữa các tab/tài khoản
     localStorage.removeItem('MUSEUM_ACTIVE_PIN');
-    // Dùng sessionStorage: Mỗi tab là 1 thiết bị hoàn toàn độc lập
     return sessionStorage.getItem(SESSION_PIN_KEY);
   });
 
   const hasActivePass = activePin !== null;
   const apiBaseUrl = `http://${window.location.hostname}:3000`;
 
-  // BƯỚC 2: Tự động kết nối Socket ngay khi khách mở Web/App
-  // Việc này giúp Backend đếm được số "Khách vãng lai" chính xác 100%
-  // Tự động báo trạng thái: Chưa nhập PIN là 'GUEST', đã nhập PIN là 'ACTIVE_USER'
+  // Tự động cập nhật vai trò Socket: Chưa nhập PIN là 'GUEST', đã nhập PIN là 'ACTIVE_USER'
   useEffect(() => {
     realtimeSyncService.connect(hasActivePass ? 'ACTIVE_USER' : 'GUEST');
   }, [hasActivePass]);
@@ -55,29 +50,35 @@ export default function App() {
     realtimeBus.publish('PLAY_EXHIBIT', { exhibitCode });
   };
 
-  // Khi trang vừa tải lên (ví dụ khách bấm F5), báo cho Server biết tab này vẫn đang mở
+  // Gửi tín hiệu keepalive ngay khi mở trang và lặp lại mỗi 20 giây
   useEffect(() => {
     if (!activePin) return;
 
-    fetch(`${apiBaseUrl}/api/passes/keepalive`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ passId: activePin }),
-    })
-      .then((res) => res.json())
-      .then((data) => {
-        // Nếu vé đã bị Admin thu hồi (REVOKED) hoặc hết hạn 24h (EXPIRED) thì tự đăng xuất
-        if (!data.valid) {
-          sessionStorage.removeItem(SESSION_PIN_KEY);
-          setActivePin(null);
-        }
+    const sendKeepAlive = () => {
+      fetch(`${apiBaseUrl}/api/passes/keepalive`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ passId: activePin }),
       })
-      .catch((err) => console.error('Lỗi kiểm tra trạng thái vé:', err));
+        .then((res) => res.json())
+        .then((data) => {
+          if (!data.valid) {
+            sessionStorage.removeItem(SESSION_PIN_KEY);
+            setActivePin(null);
+          }
+        })
+        .catch((err) => console.error('Lỗi kiểm tra trạng thái vé:', err));
+    };
+
+    sendKeepAlive();
+    const heartbeatTimer = setInterval(sendKeepAlive, 20000);
+
+    return () => clearInterval(heartbeatTimer);
   }, [activePin, apiBaseUrl]);
 
-  // Giải phóng thiết bị khi khách đóng hẳn tab web
+  // Giải phóng thiết bị khi khách đóng tab (dùng pagehide thay cho unload)
   useEffect(() => {
-    const handleUnload = () => {
+    const handlePageHide = () => {
       if (activePin) {
         fetch(`${apiBaseUrl}/api/passes/release`, {
           method: 'POST',
@@ -88,8 +89,8 @@ export default function App() {
       }
     };
 
-    window.addEventListener('unload', handleUnload);
-    return () => window.removeEventListener('unload', handleUnload);
+    window.addEventListener('pagehide', handlePageHide);
+    return () => window.removeEventListener('pagehide', handlePageHide);
   }, [activePin, apiBaseUrl]);
 
   return (

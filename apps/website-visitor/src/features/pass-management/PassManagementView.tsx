@@ -34,7 +34,7 @@ export const PassManagementView: React.FC<Props> = ({
     setErrorMsg('');
 
     try {
-      const response = await fetch('http://localhost:3000/api/passes/verify', {
+      const response = await fetch(`http://${window.location.hostname}:3000/api/passes/verify`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ passId: cleanPin }),

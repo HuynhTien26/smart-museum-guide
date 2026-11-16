@@ -585,7 +585,24 @@ export const PublicExhibitList: React.FC<Props> = ({
   onPassLogout,
   onExhibitPlayed,
 }) => {
-  const apiBaseUrl = '';
+  const apiBaseUrl = `http://${window.location.hostname}:3000`;
+  const lastSeekSentAtRef = useRef<number>(0);
+
+const sendAnalyticsEvent = (
+  eventType: 'PLAY_START' | 'LANGUAGE_CHANGE' | 'REPLAY_EVENT' | 'SEEK_BACKWARD',
+  exhibitId?: string | null,
+  customLang?: LangKey
+) => {
+  fetch(`${apiBaseUrl}/api/analytics/event`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      eventType,
+      exhibitId: exhibitId || null,
+      langCode: customLang || lang,
+    }),
+  }).catch((err) => console.error('Lỗi gửi sự kiện thống kê:', err));
+};
 
   const [exhibits, setExhibits] = useState<DbExhibit[]>([]);
   
@@ -896,7 +913,7 @@ export const PublicExhibitList: React.FC<Props> = ({
 
   // Logic Cuộn mượt (Auto scroll)
   const isUserScrolling = useRef<boolean>(false);
-  const scrollTimeout = useRef<NodeJS.Timeout | null>(null);
+  const scrollTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (!showLyricsModal) return;
@@ -999,6 +1016,7 @@ export const PublicExhibitList: React.FC<Props> = ({
       });
 
       if (onExhibitPlayed) onExhibitPlayed(exhibit.ExhibitID);
+      sendAnalyticsEvent('PLAY_START', exhibit.ExhibitID);
     } else {
       // [UC-14] Bước 7: Khách vãng lai: Hiển thị Popup giới thiệu (Teaser) yêu cầu mua/kích hoạt
       setModalStep('TEASER');
@@ -1009,10 +1027,11 @@ export const PublicExhibitList: React.FC<Props> = ({
   const handleJumpToLine = (idx: number) => {
     const safeIdx = Math.max(0, Math.min(sentences.length - 1, idx));
     if (safeIdx <= activeLineIdx) {
-      setShowReplayBadge(true);
-      setTimeout(() => setShowReplayBadge(false), 1500);
-      if (selectedExhibit && onExhibitPlayed) onExhibitPlayed(selectedExhibit.ExhibitID);
-    }
+  setShowReplayBadge(true);
+  setTimeout(() => setShowReplayBadge(false), 1500);
+  sendAnalyticsEvent('REPLAY_EVENT', selectedExhibit?.ExhibitID);
+  if (selectedExhibit && onExhibitPlayed) onExhibitPlayed(selectedExhibit.ExhibitID);
+}
 
     setActiveLineIdx(safeIdx);
     const targetSec = sentences[safeIdx]?.seconds ?? 0;
@@ -1028,11 +1047,15 @@ export const PublicExhibitList: React.FC<Props> = ({
   };
 
   const handleSeekTimeline = (newSec: number) => {
-    setCurrentTimeSec(newSec);
-    if (hasAudioFile && audioRef.current) {
-      audioRef.current.currentTime = newSec;
-    }
-  };
+  if (newSec < currentTimeSec - 1 && Date.now() - lastSeekSentAtRef.current > 1500) {
+    lastSeekSentAtRef.current = Date.now();
+    sendAnalyticsEvent('SEEK_BACKWARD', selectedExhibit?.ExhibitID);
+  }
+  setCurrentTimeSec(newSec);
+  if (hasAudioFile && audioRef.current) {
+    audioRef.current.currentTime = newSec;
+  }
+};
 
   const handleSimulatedScan = (exhibit: DbExhibit) => {
     setScanSuccessMsg(`${t.scanSuccessPrefix} #${exhibit.ExhibitID}!`);
@@ -2288,7 +2311,10 @@ export const PublicExhibitList: React.FC<Props> = ({
                   <button
                     key={k}
                     onClick={() => {
-                      setLang(k);
+                      if (k !== lang) {
+                        setLang(k);
+                        sendAnalyticsEvent('LANGUAGE_CHANGE', selectedExhibit?.ExhibitID, k);
+                      }
                       setModalStep('NONE');
                     }}
                     className={`w-full p-3 rounded-2xl border ${

@@ -111,7 +111,7 @@ function touchPinHeartbeat(passId: string, deltaSessions = 0) {
 setInterval(() => {
   const now = Date.now();
   activePinHeartbeats.forEach(async (info, passId) => {
-    if (now - info.lastSeen > 45000) {
+    if (now - info.lastSeen > 60000) {
       activePinHeartbeats.delete(passId);
       const releaseCount = Math.max(1, info.sessions);
       for (let i = 0; i < releaseCount; i++) {
@@ -269,9 +269,18 @@ app.post('/api/passes/keepalive', async (req: Request, res: Response) => {
     const currentPass = history.find((p: any) => p.PassID === cleanId);
 
     if (!currentPass || currentPass.Status === 'REVOKED' || currentPass.Status === 'EXPIRED') {
-      activePinHeartbeats.delete(cleanId);
-      return res.json({ valid: false });
-    }
+  activePinHeartbeats.delete(cleanId);
+  return res.json({ valid: false });
+}
+
+if (currentPass.Status === 'INACTIVE' && currentPass.UsedDevices < currentPass.DeviceLimit) {
+  await passDao.verifyAndActivatePass(cleanId);
+  touchPinHeartbeat(cleanId, 1);
+  return res.json({ valid: true, status: 'ACTIVE' });
+}
+
+touchPinHeartbeat(cleanId, 0);
+res.json({ valid: true, status: currentPass.Status });
 
     touchPinHeartbeat(cleanId, 0);
     res.json({ valid: true, status: currentPass.Status });
