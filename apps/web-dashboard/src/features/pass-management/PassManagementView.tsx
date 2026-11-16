@@ -48,7 +48,7 @@ export const PassManagementView: React.FC<PassManagementProps> = ({
           deviceLimit: newPass.maxDevices
         })
       });
-
+  // Kiểm tra response sau khi gọi API lưu vé [UC-15]
       if (!response.ok) {
         throw new Error('Lỗi từ Server SQL');
       }
