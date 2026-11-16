@@ -25,6 +25,7 @@ Hệ thống thuyết minh bảo tàng thông minh đa nền tảng, tích hợp
 &emsp;[1.2. Sơ đồ hoạt động (Activity Diagram)](#so-do-hoat-dong-activity-diagram)<br>
 &emsp;[1.3. Sơ đồ thành phần (Component Diagram)](#so-do-thanh-phan-component-diagram)<br>
 &emsp;[1.4. Sơ đồ triển khai (Deployment Diagram)](#so-do-trien-khai-deployment-diagram)<br>
+&emsp;[1.5. Sơ đồ DFD](#so-do-dfd)<br>
 [2. Cấu trúc thư mục Monorepo thực tế](#cau-truc-thu-muc-monorepo-thuc-te)<br>
 
 ---
