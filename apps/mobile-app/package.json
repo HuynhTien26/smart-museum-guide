@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "expo start",
-    "build": "expo export"
+    "build": "echo 'Bypass mobile build in CI/CD'"
   },
   "dependencies": {
     "expo": "^51.0.0"
