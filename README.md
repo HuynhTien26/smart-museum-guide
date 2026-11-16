@@ -109,7 +109,8 @@ Hệ thống thuyết minh bảo tàng thông minh đa nền tảng, tích hợp
 * [Sơ đồ thành phần (Component Diagram)](https://raw.githubusercontent.com/HuynhTien26/smart-museum-guide/main/docs/diagrams/component-diagram.png) — *Cấu trúc kết nối giữa Dashboard, Mobile App, Shared Package và Backend API.*
 <a id="so-do-trien-khai-deployment-diagram"></a>
 * [Sơ đồ triển khai (Deployment Diagram)](https://raw.githubusercontent.com/HuynhTien26/smart-museum-guide/main/docs/diagrams/deployment-diagram.png) — *Quy hoạch hạ tầng máy chủ, Docker container, cơ sở dữ liệu và WebSocket.*
-
+<a id="so-do-dfd"></a>
+- [Sơ đồ DFD](https://github.com/HuynhTien26/smart-museum-guide/blob/main/docs/dfd.pdf) — *Mô tả luồng dữ liệu xử lý trong hệ thống.*
 ---
 
 <a id="cau-truc-thu-muc-monorepo-thuc-te"></a>
