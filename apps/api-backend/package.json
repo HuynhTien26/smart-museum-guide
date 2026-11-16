@@ -4,8 +4,9 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "dev": "tsx watch src/server.ts"
-  },
+  "dev": "nodemon src/server.ts",
+  "build": "tsc --noEmit"
+},
   "keywords": [],
   "author": "",
   "license": "ISC",
