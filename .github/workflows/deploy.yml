@@ -10,9 +10,9 @@ jobs:
   # ==========================================
   # JOB 1: KIỂM TRA & BUILD API BACKEND
   # ==========================================
-  ci-server-api:
+  ci-api-backend:
     name: Typecheck & Build Backend
-    runs-on: pnpm --filter ./apps/server-api... run build
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout Source Code
         uses: actions/checkout@v4
@@ -33,7 +33,7 @@ jobs:
 
       - name: Typecheck & Build Backend
 
-        run: pnpm --filter ./apps/server-api... run build --if-present
+        run: pnpm --filter ./apps/api-backend... run build --if-present
 
   # ==========================================
   # JOB 2: BUILD MOBILE APP (REACT/VITE)
