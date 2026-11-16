@@ -32,7 +32,7 @@ jobs:
         run: pnpm install --no-frozen-lockfile
 
       - name: Typecheck & Build Backend
-        run: pnpm --filter ./apps/api-backend... run build --if-present
+        run: pnpm --filter ./apps/api-backend... run build
 
   # ==========================================
   # JOB 2: BUILD MOBILE APP (REACT/VITE)
