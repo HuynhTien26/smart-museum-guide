@@ -2,7 +2,7 @@ name: Website Visitor Pipeline
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "main", "develop", "staging" ]
     paths:
       - 'apps/website-visitor/**'
       - 'packages/shared/**'

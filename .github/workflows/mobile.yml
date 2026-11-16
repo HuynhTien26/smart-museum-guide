@@ -2,7 +2,7 @@ name: Mobile App Pipeline
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "main", "develop", "staging" ]
     paths:
       - 'apps/mobile-app/**'
       - 'packages/shared/**' # Chạy cả khi code dùng chung thay đổi

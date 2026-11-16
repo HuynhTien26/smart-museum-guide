@@ -12,7 +12,7 @@ jobs:
   # ==========================================
   ci-server-api:
     name: Typecheck & Build Backend
-    runs-on: pnpm --filter ./apps/server-api... run build
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout Source Code
         uses: actions/checkout@v4
@@ -32,8 +32,7 @@ jobs:
         run: pnpm install --no-frozen-lockfile
 
       - name: Typecheck & Build Backend
-
-        run: pnpm --filter ./apps/server-api... run build --if-present
+        run: pnpm --filter ./apps/api-backend... run build --if-present
 
   # ==========================================
   # JOB 2: BUILD MOBILE APP (REACT/VITE)
@@ -62,8 +61,7 @@ jobs:
       - name: Build Mobile App
         env:
           VITE_API_URL: ${{ secrets.PRODUCTION_API_URL || 'http://localhost:3000' }}
-
-        run: pnpm --filter ./apps/mobile-app... run build
+        run: pnpm --filter ./apps/mobile-app... run build --if-present
 
   # ==========================================
   # JOB 3: BUILD WEB DASHBOARD (REACT/VITE)
@@ -92,5 +90,4 @@ jobs:
       - name: Build Web Dashboard
         env:
           VITE_API_URL: ${{ secrets.PRODUCTION_API_URL || 'http://localhost:3000' }}
-
         run: pnpm --filter ./apps/web-dashboard... run build
