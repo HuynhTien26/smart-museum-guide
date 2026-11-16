@@ -14,7 +14,7 @@ export const LiveAnalyticsView: React.FC = () => {
     try {
       const response = await fetch(`http://${window.location.hostname}:3000/api/analytics/summary`);
       const data = await response.json();
-      
+  // Kiểm tra tính hợp lệ của dữ liệu trả về [UC-14/UC-08]    
       if (data.success) {
         setAnalytics({
           totalOnline: data.totalOnline,
