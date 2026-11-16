@@ -140,3 +140,4 @@ smart-museum-guide/
 ├── pnpm-workspace.yaml         # Khai báo không gian làm việc Monorepo
 ├── tsconfig.base.json          # Cấu hình TypeScript nền tảng dùng chung
 └── turbo.json                  # Cấu hình pipeline thực thi Turborepo
+
