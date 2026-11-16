@@ -117,6 +117,7 @@ Hệ thống thuyết minh bảo tàng thông minh đa nền tảng, tích hợp
 <a id="cau-truc-thu-muc-monorepo-thuc-te"></a>
 ## Cấu trúc thư mục Monorepo thực tế
 
+
 ```text
 smart-museum-guide/
 ├── apps/
