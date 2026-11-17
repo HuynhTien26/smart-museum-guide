@@ -2,10 +2,10 @@
  * apps/api-backend/src/server.ts
  * Cổng API & WebSocket xử lý các yêu cầu từ Mobile App và Web Dashboard
  */
-dotenv.config();
 import express, { Request, Response } from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+dotenv.config();
 import { Server } from 'socket.io';
 import http from 'http'; 
 import sql from 'mssql';

@@ -4,9 +4,9 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-  "dev": "nodemon src/server.ts",
-  "build": "tsc --noEmit"
-},
+    "dev": "nodemon src/server.ts",
+    "build": "tsc --noEmit"
+  },
   "keywords": [],
   "author": "",
   "license": "ISC",
@@ -26,6 +26,6 @@
     "nodemon": "^3.1.14",
     "ts-node": "^10.9.2",
     "tsx": "^4.23.15",
-    "typescript": "^7.0.2"
+    "typescript": "5.8.3"
   }
 }
